@@ -1,0 +1,309 @@
+#!/bin/bash
+#### ENV VARS NEEDED BY THIS SCRIPT
+# BRANCH            - The current ready branch (set by TeamCity)
+# SLACK_TOKEN       - For posting to slack
+# SLACK_CHANNEL_ID  - For posting to slack
+# BUILD_URL         - URL to the build on TeamCity, so we can link in slack messages
+
+npmpath=`which npm`
+alias npm="node --max_old_space_size=8000 ${npmpath}"
+
+if [ "$BRANCH" = 'refs/heads/master' ]
+then
+	echo "master branch, doing nothing"
+	exit 0
+fi
+
+### Step helper functions
+stepName=""
+step_end(){
+	echo "##teamcity[blockClosed name='${stepName}']"
+}
+step_start(){
+	if [ "${stepName}" != '' ]
+	then
+		step_end
+	fi
+	stepName=`echo "-- $1 --"`
+	echo "##teamcity[blockOpened name='${stepName}']"
+}
+
+slack(){
+	if [ "$2" = 'green' ]
+	then
+		symbol="✅"
+	elif [ "$2" = 'yellow' ]
+	then
+		symbol="❗"
+	elif [ "$2" = 'red' ]
+	then
+		symbol="❌"
+	fi
+	curl -X POST \
+		"https://slack.com/api/chat.postMessage?token=${SLACK_TOKEN}&channel=${SLACK_CHANNEL_ID}" \
+		--data-urlencode "text=$symbol $1" \
+		-s > /dev/null
+	if [ "$3" != '' ]
+	then
+		step_start "Post error log to slack"
+		curl -X POST "https://slack.com/api/files.upload?token=${SLACK_TOKEN}&filetype=text&filename=${project}.txt&channels=${SLACK_CHANNEL_ID}" -s \
+			-F content="$3"
+	fi
+}
+
+project=`node -e "console.log(require('./package.json').name || '')"`
+slackUser=$(curl –s -L 'https://raw.githubusercontent.com/DoctrHealthcare/ci-merge/master/getSlackUser.sh' | bash)
+
+commitMessage="${BRANCH}"
+git config user.email "ae@practio.com" || delete_ready_branch $? "Could not set git email"
+git config user.name "Teamcity" || delete_ready_branch $? "Could not set git user name"
+
+step_start "Finding author"
+
+lastCommitAuthor=`git log --pretty=format:'%an' -n 1`
+
+echo "This will be the author of the merge commit in master: ${lastCommitAuthor} (the last commit in branch was done by this person)"
+
+################################################
+# Make sure git fetches (hidden) Pull Requests
+# by adding:
+# fetch = +refs/pull/*/head:refs/remotes/origin/pullrequest/*
+# to .git/config under the origin remote
+################################################
+
+step_start "Ensuring fetch of pull requests to .git/config"
+
+currentFetch=`grep '	fetch =.\+refs/pull/\*/head:refs/remotes/origin/pullrequest/\*' .git/config`
+if [ "$currentFetch" = '' ]
+then
+	# Avoid -i flag for sed, because of platform differences
+	sed 's/\[remote \"origin\"\]/[remote "origin"]\
+	fetch = +refs\/pull\/*\/head:refs\/remotes\/origin\/pullrequest\/*/g' .git/config >.git/config_with_pull_request
+	cp .git/config .git/config.backup
+	mv .git/config_with_pull_request .git/config
+	echo 'Added fetch of pull request to .git/config:'
+	cat .git/config
+else
+	echo 'Fetch of pull request already in place in .git/config'
+fi
+git fetch --prune || delete_ready_branch $? "Could not git fetch"
+
+########################################################################################
+# Lookup PR number
+# By looking the SHA checksum of the current branchs latests commit
+# And finding a pull request that has a matching SHA checksum as the lastest commit
+# This enforces a restriction that you can only merge branches that match a pull request
+# And using the number of the pull request later, we can close the pull request
+# by making the squash merge commit message include "fixes #[pull request number] ..."
+########################################################################################
+
+step_start "Finding pull request that matches current branch"
+
+currentSha=`git log -1 --format="%H"`
+echo "Current SHA:"
+echo "${currentSha}"
+
+
+error='
+Did you try to deploy a branch that is not a pull request?
+Or did you forget to push your changes to github?'
+
+matchingPullRequest=`git show-ref | grep $currentSha | grep 'refs/remotes/origin/pullrequest/'`
+if [ "$matchingPullRequest" = '' ] ; then
+	echo "Error finding matching pull request: ${error}" >&2; delete_ready_branch 1 "Could not find matching pull request"
+fi
+echo "Matching pull request:"
+echo "${matchingPullRequest}"
+
+pullRequestNumber=`echo "${matchingPullRequest}" | sed 's/[0-9a-z]* refs\/remotes\/origin\/pullrequest\///g' | sed 's/\s//g'`
+echo "Extracted pull request number:"
+echo "${pullRequestNumber}"
+case ${pullRequestNumber} in
+	''|*[!0-9]*) echo "Error pull request number does not match number regExp (weird!): ${error}" >&2; delete_ready_branch 1 "Could not find pull request number";;
+	*) echo "Success. Pull request number passes regExp test for number. Exporting pullRequestNumber=${pullRequestNumber}" ;;
+esac
+
+#####################################################################
+# Checkout master
+# Cleanup any leftovers for previous failed merges (reset --hard, clean -fx)
+# And pull master
+#####################################################################
+
+step_start "Checking out master, resetting (hard), pulling from origin and cleaning"
+
+git checkout master || delete_ready_branch $? "Could not checkout master"
+git reset --hard origin/master || delete_ready_branch $? "Could not reset to master"
+git pull || delete_ready_branch $? "Could not pull master"
+git clean -fx || delete_ready_branch $? "Could not git clean on master"
+
+
+################################################
+# Merge into master
+# You will want to use you own email here
+################################################
+
+step_start "Merging ready branch into master, with commit message that closes pull request number ${pullRequestNumber}"
+
+message_on_commit_error(){
+	commitErrorCode=$1
+	echo 'Commiting changes returned an error (status: ${commitErrorCode}). We are assuming that this is due to no changes, and exiting gracefully'
+	delete_ready_branch 0 "No changes in ready build"
+}
+
+git merge --squash "ready/${BRANCH}" || delete_ready_branch $? "Merge conflicts (could not merge)"
+branchWithUnderscore2SpacesAndRemovedTimestamp=`echo "${BRANCH}" | sed -e 's/_/ /g' | sed -e 's/\/[0-9]*s$//g'`
+if [ "$pullRequestNumber" = 'none' ]
+then
+	commitMessage="${branchWithUnderscore2SpacesAndRemovedTimestamp}"
+else
+	commitMessage="fixes #${pullRequestNumber} - ${branchWithUnderscore2SpacesAndRemovedTimestamp}"
+fi
+echo "Committing squashed merge with message: \"${message}\""
+git commit -m "${commitMessage}" --author "${lastCommitAuthor}" || message_on_commit_error $?
+
+
+mergeCommitSha=`git log -1 --format="%H"`
+
+
+################################################
+# Check npm version
+################################################
+npmSpecified=`node -e "console.log(require('./package.json').engines.npm || '')"`
+npmCurrent=`npm --version`
+if [ "${npmSpecified}" != "${npmCurrent}" ]
+then
+	delete_ready_branch 1 "Current npm version is ${npmCurrent}. It does not match the npm version in package.json ${npmSpecified}"
+fi
+
+################################################
+# Check node.js version
+################################################
+nodeSpecified=`node -e "console.log(require('./package.json').engines.node || '')"`
+nodeCurrent=`node --version | sed -e 's/v//g'`
+if [ "${nodeSpecified}" != "${nodeCurrent}" ]
+then
+	delete_ready_branch 1 "Current node.js version is ${nodeCurrent}. It does not match the node.js version in package.json ${nodeSpecified}"
+fi
+
+################################################
+# Run tests
+################################################
+
+step_start "Running tests with >npm run teamcity "
+
+## file descriptor 5 is stdout
+exec 5>&1
+## redirect stderr to stdout for capture by tee, and redirect stdout to file descriptor 5 for output on stdout (with no capture by tee)
+## after capture of stderr on stdout by tee, redirect back to stderr
+npm run teamcity 2>&1 1>&5 | tee err.log 1>&2
+
+## get exit code of "npm run teamcity"
+code="${PIPESTATUS[0]}"
+err=`node -e "
+const fs = require('fs');
+const path = require('path');
+let log = fs.readFileSync(path.join(__dirname, 'err.log'), 'utf-8')
+	.split('\n')
+	.filter(line => !/^npm (ERR|WARN)/.test(line))
+	.join('\n')
+	.replace(/\|n/g, '\n');
+console.log(log);
+" && rm -f err.log`
+
+if [ "${code}" != 0 ]
+then
+	delete_ready_branch "${code}" "Failing test(s)"	"${err}"
+fi
+
+################################################
+# Push changes to github
+################################################
+
+step_start "Pushing changes to github master branch"
+
+git push origin master || delete_ready_branch $? "Could not push changes to GitHub"
+
+delete_ready_branch 0
+
+deploy(){
+	################################################
+	# Deploy to production
+	################################################
+
+	step_start "Deploying to production"
+	commitMessage=`git log -1 --pretty=%B`
+	lastCommitAuthor=`git log --pretty=format:'%an' -n 1`
+	deployscript=`node -e "console.log(require('./package.json').scripts.deploy || '')"`
+	if [ "$deployscript" = '' ]
+	then
+		_exit 1 "No npm run deploy script available"
+	else
+		npm run deploy || _exit $? "npm run deploy failed"
+	fi
+	slack "Success deploying ${project} ${slackUser}
+${commitMessage} - <${commitUrl}${mergeCommitSha}|view commit> " green
+
+	################################################
+	# Add git tag and push to GitHub
+	################################################
+
+	step_start "Adding git tag and pushing to GitHub"
+	git config user.email "ae@practio.com" || _exit $? "Could not set git user.email"
+	git config user.name "Teamcity" || _exit $? "Could not set git user.name"
+	datetime=`date +%Y-%m-%d_%H-%M-%S`
+	git tag -a "${project}.production.${datetime}" -m "${commitMessage}" || _exit $? "Could not create git tag"
+	git push origin --tags || _exit $? "Could not push git tag to GitHub"
+
+	_exit 0
+}
+
+# Always last thing done after merge (fail or success)
+delete_ready_branch (){
+	step_start "Deleting ready branch on github"
+	git push origin ":ready/${BRANCH}"
+	step_start "Post to slack"
+	if [ "$1" = '0' ]
+	then
+		if [ "$2" != '' ]
+		then
+			slack "$2 ${project} ${slackUser}
+${commitMessage} - <${BUILD_URL}|view build log> " yellow
+			message=`echo "$2
+${project} ${slackUser}
+${BUILD_URL}
+${commitMessage}"`
+		else
+			slack "Success merging ${project} ${slackUser}
+${commitMessage} - <${commitUrl}${mergeCommitSha}|view commit> " green
+			message=`echo "Success merging ${project}
+${slackUser}
+${commitUrl}${mergeCommitSha}
+${commitMessage}"`
+			deploy
+		fi
+	else
+		slack "Failure merging: $2 ${project} ${slackUser}
+${commitMessage} - <${BUILD_URL}|view build log> " red "$3"
+		message=`echo "Failure merging: $2
+${project} ${slackUser}
+${BUILD_URL}
+${commitMessage}
+$3"`
+	fi
+	step_end
+	echo "
+${message}"
+	exit $1
+}
+
+_exit (){
+	step_end
+	if [ "$1" = '0' ]
+	then
+		exit
+	else
+		slack "Failure: $2 ${project} ${slackUser}
+${commitMessage} - <${BUILD_URL}|view build log> " red
+		exit $1
+	fi
+}
