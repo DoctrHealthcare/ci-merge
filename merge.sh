@@ -4,6 +4,7 @@
 # SLACK_TOKEN       - For posting to slack
 # SLACK_CHANNEL_ID  - For posting to slack
 # BUILD_URL         - URL to the build on TeamCity, so we can link in slack messages
+# COMMIT_URL        - URL to the commit on GitHub. This script will add the commit SHA
 
 ################################################
 # Deploy to production
@@ -20,7 +21,7 @@ deploy(){
 		npm run deploy || _exit $? "npm run deploy failed"
 	fi
 	slack "Success deploying ${project} ${slackUser}
-${commitMessage} - <${commitUrl}${mergeCommitSha}|view commit> " green
+${commitMessage} - <${COMMIT_URL}${mergeCommitSha}|view commit> " green
 
 	################################################
 	# Add git tag and push to GitHub
@@ -55,10 +56,10 @@ ${BUILD_URL}
 ${commitMessage}"`
 		else
 			slack "Success merging ${project} ${slackUser}
-${commitMessage} - <${commitUrl}${mergeCommitSha}|view commit> " green
+${commitMessage} - <${COMMIT_URL}${mergeCommitSha}|view commit> " green
 			message=`echo "Success merging ${project}
 ${slackUser}
-${commitUrl}${mergeCommitSha}
+${COMMIT_URL}${mergeCommitSha}
 ${commitMessage}"`
 			deploy
 		fi
