@@ -21,6 +21,7 @@ function getSlackUser()
 	else
 		slackUser=`getSlackName "${email}"`
 		users=`curl -X POST "https://slack.com/api/users.list?token=${SLACK_TOKEN}" -s`
+		echo ${users}
 		slackUserId=`node -e "let users =  ${users}; console.log(users.members.reduce((acc,m)=>{ if(m.name==='${slackUser}'||m.profile.email==='${email}'){return m.id} return acc;}, ''))"`
 		slackUser=`node -e "let users =  ${users}; console.log(users.members.reduce((acc,m)=>{ if(m.name==='${slackUser}'||m.profile.email==='${email}'){return m.name} return acc;}, ''))"`
 		if [ "${slackUserId}" = '' ]
