@@ -21,8 +21,8 @@ function getSlackUser()
 	else
 		slackUser=`getSlackName "${email}"`
 		users=`curl -X POST "https://slack.com/api/users.list?token=${SLACK_TOKEN}" -s`
-		slackUserId=`node -e "let users =  ${users}; console.log(users.members.reduce((acc,m)=>{ if(m.name==='${slackUser}'||m.profile.email==='${email}||m.profile.display_name==='${slackUser}'){return m.id} return acc;}, ''))"`
-		slackUser=`node -e "let users =  ${users}; console.log(users.members.reduce((acc,m)=>{ if(m.name==='${slackUser}'||m.profile.email==='${email}||m.profile.display_name==='${slackUser}'){return m.name} return acc;}, ''))"`
+		slackUserId=`node -e "let users =  ${users}; console.log(users.members.reduce((acc,m)=>{ if(m.name==='${slackUser}'||m.profile.email==='${email}'||m.profile.display_name==='${slackUser}'){return m.id} return acc;}, ''))"`
+		slackUser=`node -e "let users =  ${users}; console.log(users.members.reduce((acc,m)=>{ if(m.name==='${slackUser}'||m.profile.email==='${email}'||m.profile.display_name==='${slackUser}'){return m.name} return acc;}, ''))"`
 		if [ "${slackUserId}" = '' ]
 		then
 			echo "${slackUser}|${email} (could not find this slack-username or email in slack?! Fix it here: https://github.com/DoctrHealthcare/ci-merge/blob/master/getSlackUser.sh)"
