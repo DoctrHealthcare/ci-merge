@@ -15,7 +15,7 @@ getSlackName(){
 function getSlackUser()
 {
 	email=`git log --pretty=format:'%ae' -n 1`
-	if [ "${email}" = 'debitoor-bot@debitoor.com' ]
+	if [ "${email}" = 'build@practio.com' ]
 	then
 		echo "TeamCity"
 	else
