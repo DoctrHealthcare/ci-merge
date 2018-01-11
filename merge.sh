@@ -5,11 +5,10 @@
 # SLACK_CHANNEL_ID  - For posting to slack
 # BUILD_URL         - URL to the build on TeamCity, so we can link in slack messages
 
+################################################
+# Deploy to production
+###############################################
 deploy(){
-	################################################
-	# Deploy to production
-	################################################
-
 	step_start "Deploying to production"
 	commitMessage=`git log -1 --pretty=%B`
 	lastCommitAuthor=`git log --pretty=format:'%an' -n 1`
@@ -36,7 +35,10 @@ ${commitMessage} - <${commitUrl}${mergeCommitSha}|view commit> " green
 	_exit 0
 }
 
+################################################
+# Delete Ready branch
 # Always last thing done after merge (fail or success)
+################################################
 delete_ready_branch (){
 	step_start "Deleting ready branch on github"
 	git push origin ":ready/${BRANCH}"
@@ -87,7 +89,9 @@ ${commitMessage} - <${BUILD_URL}|view build log> " red
 	fi
 }
 
-### Step helper functions
+################################################
+# TeamCity step helper functions
+################################################
 stepName=""
 step_end(){
 	echo "##teamcity[blockClosed name='${stepName}']"
@@ -101,20 +105,9 @@ step_start(){
 	echo "##teamcity[blockOpened name='${stepName}']"
 }
 
-#############
-### START ###
-#############
-npmpath=`which npm`
-alias npm="node --max_old_space_size=8000 ${npmpath}"
-
-if [ "$BRANCH" = 'refs/heads/master' ]
-then
-	echo "master branch, doing nothing"
-	exit 0
-fi
-
-
-
+################################################
+# Posting messages to slack
+################################################
 slack(){
 	if [ "$2" = 'green' ]
 	then
@@ -137,6 +130,20 @@ slack(){
 			-F content="$3"
 	fi
 }
+
+
+
+################################################
+### START OF SCRIPT - HERE WE GO!
+################################################
+npmpath=`which npm`
+alias npm="node --max_old_space_size=8000 ${npmpath}"
+
+if [ "$BRANCH" = 'refs/heads/master' ]
+then
+	echo "master branch, doing nothing"
+	exit 0
+fi
 
 project=`node -e "console.log(require('./package.json').name || '')"`
 slackUser=$(curl –s -L 'https://raw.githubusercontent.com/DoctrHealthcare/ci-merge/master/getSlackUser.sh' | bash)
@@ -164,9 +171,9 @@ if [ "$currentFetch" = '' ]
 then
 	# Avoid -i flag for sed, because of platform differences
 	sed 's/\[remote \"origin\"\]/[remote "origin"]\
-	fetch = +refs\/pull\/*\/head:refs\/remotes\/origin\/pullrequest\/*/g' .git/config >.git/config_with_pull_request
-	cp .git/config .git/config.backup
-	mv .git/config_with_pull_request .git/config
+	fetch = +refs\/pull\/*\/head:refs\/remotes\/origin\/pullrequest\/*/g' .git/config >.git/config_with_pull_request || delete_ready_branch $? "Could not sed .git/config"
+	cp .git/config .git/config.backup || delete_ready_branch $? "Could not copy .git/config"
+	mv .git/config_with_pull_request .git/config || delete_ready_branch $? "Could not mv .git/config"
 	echo 'Added fetch of pull request to .git/config:'
 	cat .git/config
 else
@@ -272,7 +279,7 @@ then
 fi
 
 ################################################
-# Run tests
+# Run tests, and capture output to stderr
 ################################################
 
 step_start "Running tests with >npm run teamcity "
