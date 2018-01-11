@@ -5,14 +5,87 @@
 # SLACK_CHANNEL_ID  - For posting to slack
 # BUILD_URL         - URL to the build on TeamCity, so we can link in slack messages
 
-npmpath=`which npm`
-alias npm="node --max_old_space_size=8000 ${npmpath}"
+deploy(){
+	################################################
+	# Deploy to production
+	################################################
 
-if [ "$BRANCH" = 'refs/heads/master' ]
-then
-	echo "master branch, doing nothing"
-	exit 0
-fi
+	step_start "Deploying to production"
+	commitMessage=`git log -1 --pretty=%B`
+	lastCommitAuthor=`git log --pretty=format:'%an' -n 1`
+	deployscript=`node -e "console.log(require('./package.json').scripts.deploy || '')"`
+	if [ "$deployscript" = '' ]
+	then
+		_exit 1 "No npm run deploy script available"
+	else
+		npm run deploy || _exit $? "npm run deploy failed"
+	fi
+	slack "Success deploying ${project} ${slackUser}
+${commitMessage} - <${commitUrl}${mergeCommitSha}|view commit> " green
+
+	################################################
+	# Add git tag and push to GitHub
+	################################################
+
+	step_start "Adding git tag and pushing to GitHub"
+	git config user.email "build@practio.com" || _exit $? "Could not set git user.email"
+	git config user.name "Teamcity" || _exit $? "Could not set git user.name"
+	datetime=`date +%Y-%m-%d_%H-%M-%S`
+	git tag -a "${project}.production.${datetime}" -m "${commitMessage}" || _exit $? "Could not create git tag"
+	git push origin --tags || _exit $? "Could not push git tag to GitHub"
+	_exit 0
+}
+
+# Always last thing done after merge (fail or success)
+delete_ready_branch (){
+	step_start "Deleting ready branch on github"
+	git push origin ":ready/${BRANCH}"
+	step_start "Post to slack"
+	if [ "$1" = '0' ]
+	then
+		if [ "$2" != '' ]
+		then
+			slack "$2 ${project} ${slackUser}
+${commitMessage} - <${BUILD_URL}|view build log> " yellow
+			message=`echo "$2
+${project} ${slackUser}
+${BUILD_URL}
+${commitMessage}"`
+		else
+			slack "Success merging ${project} ${slackUser}
+${commitMessage} - <${commitUrl}${mergeCommitSha}|view commit> " green
+			message=`echo "Success merging ${project}
+${slackUser}
+${commitUrl}${mergeCommitSha}
+${commitMessage}"`
+			deploy
+		fi
+	else
+		slack "Failure merging: $2 ${project} ${slackUser}
+${commitMessage} - <${BUILD_URL}|view build log> " red "$3"
+		message=`echo "Failure merging: $2
+${project} ${slackUser}
+${BUILD_URL}
+${commitMessage}
+$3"`
+	fi
+	step_end
+	echo "
+${message}"
+	exit $1
+}
+
+_exit (){
+	step_end
+	if [ "$1" = '0' ]
+	then
+		exit
+	else
+		slack "Failure: $2 ${project} ${slackUser}
+${commitMessage} - <${BUILD_URL}|view build log> " red
+		exit $1
+	fi
+}
 
 ### Step helper functions
 stepName=""
@@ -27,6 +100,20 @@ step_start(){
 	stepName=`echo "-- $1 --"`
 	echo "##teamcity[blockOpened name='${stepName}']"
 }
+
+#############
+### START ###
+#############
+npmpath=`which npm`
+alias npm="node --max_old_space_size=8000 ${npmpath}"
+
+if [ "$BRANCH" = 'refs/heads/master' ]
+then
+	echo "master branch, doing nothing"
+	exit 0
+fi
+
+
 
 slack(){
 	if [ "$2" = 'green' ]
@@ -53,9 +140,8 @@ slack(){
 
 project=`node -e "console.log(require('./package.json').name || '')"`
 slackUser=$(curl –s -L 'https://raw.githubusercontent.com/DoctrHealthcare/ci-merge/master/getSlackUser.sh' | bash)
-
 commitMessage="${BRANCH}"
-git config user.email "ae@practio.com" || delete_ready_branch $? "Could not set git email"
+git config user.email "build@practio.com" || delete_ready_branch $? "Could not set git email"
 git config user.name "Teamcity" || delete_ready_branch $? "Could not set git user name"
 
 step_start "Finding author"
@@ -224,86 +310,3 @@ step_start "Pushing changes to github master branch"
 git push origin master || delete_ready_branch $? "Could not push changes to GitHub"
 
 delete_ready_branch 0
-
-deploy(){
-	################################################
-	# Deploy to production
-	################################################
-
-	step_start "Deploying to production"
-	commitMessage=`git log -1 --pretty=%B`
-	lastCommitAuthor=`git log --pretty=format:'%an' -n 1`
-	deployscript=`node -e "console.log(require('./package.json').scripts.deploy || '')"`
-	if [ "$deployscript" = '' ]
-	then
-		_exit 1 "No npm run deploy script available"
-	else
-		npm run deploy || _exit $? "npm run deploy failed"
-	fi
-	slack "Success deploying ${project} ${slackUser}
-${commitMessage} - <${commitUrl}${mergeCommitSha}|view commit> " green
-
-	################################################
-	# Add git tag and push to GitHub
-	################################################
-
-	step_start "Adding git tag and pushing to GitHub"
-	git config user.email "ae@practio.com" || _exit $? "Could not set git user.email"
-	git config user.name "Teamcity" || _exit $? "Could not set git user.name"
-	datetime=`date +%Y-%m-%d_%H-%M-%S`
-	git tag -a "${project}.production.${datetime}" -m "${commitMessage}" || _exit $? "Could not create git tag"
-	git push origin --tags || _exit $? "Could not push git tag to GitHub"
-
-	_exit 0
-}
-
-# Always last thing done after merge (fail or success)
-delete_ready_branch (){
-	step_start "Deleting ready branch on github"
-	git push origin ":ready/${BRANCH}"
-	step_start "Post to slack"
-	if [ "$1" = '0' ]
-	then
-		if [ "$2" != '' ]
-		then
-			slack "$2 ${project} ${slackUser}
-${commitMessage} - <${BUILD_URL}|view build log> " yellow
-			message=`echo "$2
-${project} ${slackUser}
-${BUILD_URL}
-${commitMessage}"`
-		else
-			slack "Success merging ${project} ${slackUser}
-${commitMessage} - <${commitUrl}${mergeCommitSha}|view commit> " green
-			message=`echo "Success merging ${project}
-${slackUser}
-${commitUrl}${mergeCommitSha}
-${commitMessage}"`
-			deploy
-		fi
-	else
-		slack "Failure merging: $2 ${project} ${slackUser}
-${commitMessage} - <${BUILD_URL}|view build log> " red "$3"
-		message=`echo "Failure merging: $2
-${project} ${slackUser}
-${BUILD_URL}
-${commitMessage}
-$3"`
-	fi
-	step_end
-	echo "
-${message}"
-	exit $1
-}
-
-_exit (){
-	step_end
-	if [ "$1" = '0' ]
-	then
-		exit
-	else
-		slack "Failure: $2 ${project} ${slackUser}
-${commitMessage} - <${BUILD_URL}|view build log> " red
-		exit $1
-	fi
-}
