@@ -16,7 +16,7 @@ deploy(){
 	deployscript=`node -e "console.log(require('./package.json').scripts.deploy || '')"`
 	if [ "$deployscript" = '' ]
 	then
-		_exit 1 "No npm run deploy script available"
+		_exit 0 "No npm run deploy script available"
 	else
 		npm run deploy || _exit $? "npm run deploy failed"
 	fi
