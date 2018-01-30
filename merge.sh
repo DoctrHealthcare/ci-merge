@@ -267,7 +267,7 @@ npmCurrent=`npm --version`
 if [ "${npmSpecified}" != "${npmCurrent}" ]
 then
 	npm install -g "npm@${npmSpecified}" || delete_ready_branch 1 "Could not install npm version ${nodeSpecified}. Changing from current npm version ${nodeSpecified}"
-i
+fi
 
 ################################################
 # Check node.js version
@@ -278,7 +278,7 @@ if [ "${nodeSpecified}" != "${nodeCurrent}" ]
 then
 	command -v nvm || (curl -o- https://raw.githubusercontent.com/creationix/nvm/v0.33.8/install.sh | bash && source ~/.bashrc) || delete_ready_branch 1 "Could not install nvm to change node version from ${nodeCurrent} to ${nodeSpecified}"
 	nvm install "${nodeSpecified}" || delete_ready_branch 1 "Nvm failed to change node version from ${nodeCurrent} to ${nodeSpecified}"
-ffi
+fi
 
 ################################################
 # Run tests, and capture output to stderr
