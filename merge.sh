@@ -276,7 +276,9 @@ nodeSpecified=$(node -e "console.log(require('./package.json').engines.node || '
 nodeCurrent=$(node --version | sed -e 's/v//g')
 if [ "${nodeSpecified}" != "${nodeCurrent}" ]
 then
-	command -v nvm || (curl -o- https://raw.githubusercontent.com/creationix/nvm/v0.33.8/install.sh | bash && source ~/.bashrc) || delete_ready_branch 1 "Could not install nvm to change node version from ${nodeCurrent} to ${nodeSpecified}"
+	command -v nvm || (curl -o- https://raw.githubusercontent.com/creationix/nvm/v0.33.8/install.sh | bash) || delete_ready_branch 1 "Could not install nvm to change node version from ${nodeCurrent} to ${nodeSpecified}"
+	export NVM_DIR="$HOME/.nvm"
+	([ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh") || delete_ready_branch 1 "Nvm failed to load"
 	nvm install "${nodeSpecified}" || delete_ready_branch 1 "Nvm failed to change node version from ${nodeCurrent} to ${nodeSpecified}"
 fi
 
@@ -298,10 +300,10 @@ err=$(node -e "
 const fs = require('fs');
 const path = require('path');
 let log = fs.readFileSync(path.join(__dirname, 'err.log'), 'utf-8')
-	.split('\n')
+	.split('\\n')
 	.filter(line => !/^npm (ERR|WARN)/.test(line))
-	.join('\n')
-	.replace(/\|n/g, '\n');
+	.join('\\n')
+	.replace(/\\|n/g, '\\n');
 console.log(log);
 " && rm -f err.log)
 
