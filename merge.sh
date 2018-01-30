@@ -266,8 +266,8 @@ npmSpecified=`node -e "console.log(require('./package.json').engines.npm || '')"
 npmCurrent=`npm --version`
 if [ "${npmSpecified}" != "${npmCurrent}" ]
 then
-	delete_ready_branch 1 "Current npm version is ${npmCurrent}. It does not match the npm version in package.json ${npmSpecified}"
-fi
+	npm install -g "npm@${npmSpecified}" || delete_ready_branch 1 "Could not install npm version ${nodeSpecified}. Changing from current npm version ${nodeSpecified}"
+i
 
 ################################################
 # Check node.js version
@@ -276,8 +276,9 @@ nodeSpecified=`node -e "console.log(require('./package.json').engines.node || ''
 nodeCurrent=`node --version | sed -e 's/v//g'`
 if [ "${nodeSpecified}" != "${nodeCurrent}" ]
 then
-	delete_ready_branch 1 "Current node.js version is ${nodeCurrent}. It does not match the node.js version in package.json ${nodeSpecified}"
-fi
+	command -v nvm || (curl -o- https://raw.githubusercontent.com/creationix/nvm/v0.33.8/install.sh | bash && source ~/.bashrc) || delete_ready_branch 1 "Could not install nvm to change node version from ${nodeCurrent} to ${nodeSpecified}"
+	nvm install "${nodeSpecified}" || delete_ready_branch 1 "Nvm failed to change node version from ${nodeCurrent} to ${nodeSpecified}"
+ffi
 
 ################################################
 # Run tests, and capture output to stderr
