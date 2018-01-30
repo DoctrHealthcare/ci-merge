@@ -260,6 +260,20 @@ mergeCommitSha=$(git log -1 --format="%H")
 
 
 ################################################
+# Check node.js version
+################################################
+nodeSpecified=$(node -e "console.log(require('./package.json').engines.node || '')")
+nodeCurrent=$(node --version | sed -e 's/v//g')
+if [ "${nodeSpecified}" != "${nodeCurrent}" ]
+then
+	step_start "Changing node.js v${nodeCurrent}->v${nodeSpecified}"
+	if [ ! -f "$HOME/.nvm/nvm.sh" ]; then
+		(curl -o- https://raw.githubusercontent.com/creationix/nvm/v0.33.8/install.sh | bash) || delete_ready_branch 1 "Could not install nvm to change node version from ${nodeCurrent} to ${nodeSpecified}"
+	fi
+	(source "$HOME/.nvm/nvm.sh" && nvm install "${nodeSpecified}") || delete_ready_branch 1 "Nvm failed to change node version from ${nodeCurrent} to ${nodeSpecified}"
+fi
+
+################################################
 # Check npm version
 ################################################
 npmSpecified=$(node -e "console.log(require('./package.json').engines.npm || '')")
@@ -268,21 +282,6 @@ if [ "${npmSpecified}" != "${npmCurrent}" ]
 then
 	step_start "Changing npm v${npmCurrent}->v${npmSpecified}"
 	npm install -g "npm@${npmSpecified}" || delete_ready_branch 1 "Could not install npm version ${npmSpecified}. Changing from current npm version ${npmCurrent}"
-fi
-
-################################################
-# Check node.js version
-################################################
-nodeSpecified=$(node -e "console.log(require('./package.json').engines.node || '')")
-nodeCurrent=$(node --version | sed -e 's/v//g')
-if [ "${nodeSpecified}" != "${nodeCurrent}" ]
-then
-	step_start "Changing node.js v${nodeCurrent}->v${nodeSpecified}"
-	ls -l "$HOME/.nvm"
-	(source "$HOME/.nvm/nvm.sh" && nvm install "${nodeSpecified}") || echo "Ignoring initial error enabling nvm"
-	command -v nvm || (curl -o- https://raw.githubusercontent.com/creationix/nvm/v0.33.8/install.sh | bash) || delete_ready_branch 1 "Could not install nvm to change node version from ${nodeCurrent} to ${nodeSpecified}"
-	ls -l "$HOME/.nvm"
-	(source "$HOME/.nvm/nvm.sh" && nvm install "${nodeSpecified}") || delete_ready_branch 1 "Nvm failed to change node version from ${nodeCurrent} to ${nodeSpecified}"
 fi
 
 ################################################
