@@ -281,7 +281,7 @@ npmCurrent=$(npm --version)
 if [ "${npmSpecified}" != "${npmCurrent}" ]
 then
 	step_start "Changing npm v${npmCurrent}->v${npmSpecified}"
-	npm install -g "npm@${npmSpecified}" || delete_ready_branch 1 "Could not install npm version ${npmSpecified}. Changing from current npm version ${npmCurrent}"
+	sudo npm install -g "npm@${npmSpecified}" || delete_ready_branch 1 "Could not install npm version ${npmSpecified}. Changing from current npm version ${npmCurrent}"
 fi
 
 ################################################
