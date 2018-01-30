@@ -266,7 +266,8 @@ npmSpecified=$(node -e "console.log(require('./package.json').engines.npm || '')
 npmCurrent=$(npm --version)
 if [ "${npmSpecified}" != "${npmCurrent}" ]
 then
-	npm install -g "npm@${npmSpecified}" || delete_ready_branch 1 "Could not install npm version ${nodeSpecified}. Changing from current npm version ${nodeSpecified}"
+	step_start "Changing npm v${npmCurrent}->v${npmSpecified}"
+	npm install -g "npm@${npmSpecified}" || delete_ready_branch 1 "Could not install npm version ${npmSpecified}. Changing from current npm version ${npmCurrent}"
 fi
 
 ################################################
@@ -276,9 +277,10 @@ nodeSpecified=$(node -e "console.log(require('./package.json').engines.node || '
 nodeCurrent=$(node --version | sed -e 's/v//g')
 if [ "${nodeSpecified}" != "${nodeCurrent}" ]
 then
+	step_start "Changing node.js v${nodeCurrent}->v${nodeSpecified}"
+	source ~/.bashrc || echo "Ignoring initial error sourcing ~/.bashrc"
 	command -v nvm || (curl -o- https://raw.githubusercontent.com/creationix/nvm/v0.33.8/install.sh | bash) || delete_ready_branch 1 "Could not install nvm to change node version from ${nodeCurrent} to ${nodeSpecified}"
-	export NVM_DIR="$HOME/.nvm"
-	([ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh") || delete_ready_branch 1 "Nvm failed to load"
+	source ~/.bashrc || delete_ready_branch 1 "Could not source ~/.bashrc after nvm install"
 	nvm install "${nodeSpecified}" || delete_ready_branch 1 "Nvm failed to change node version from ${nodeCurrent} to ${nodeSpecified}"
 fi
 
