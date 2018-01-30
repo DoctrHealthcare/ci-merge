@@ -11,9 +11,9 @@
 ###############################################
 deploy(){
 	step_start "Deploying to production"
-	commitMessage=`git log -1 --pretty=%B`
-	lastCommitAuthor=`git log --pretty=format:'%an' -n 1`
-	deployscript=`node -e "console.log(require('./package.json').scripts.deploy || '')"`
+	commitMessage=$(git log -1 --pretty=%B)
+	lastCommitAuthor=$(git log --pretty=format:'%an' -n 1)
+	deployscript=$(node -e "console.log(require('./package.json').scripts.deploy || '')")
 	if [ "$deployscript" = '' ]
 	then
 		_exit 0 "No npm run deploy script available"
@@ -30,7 +30,7 @@ ${commitMessage} - <${COMMIT_URL}${mergeCommitSha}|view commit> " green
 	step_start "Adding git tag and pushing to GitHub"
 	git config user.email "build@practio.com" || _exit $? "Could not set git user.email"
 	git config user.name "Teamcity" || _exit $? "Could not set git user.name"
-	datetime=`date +%Y-%m-%d_%H-%M-%S`
+	datetime=$(date +%Y-%m-%d_%H-%M-%S)
 	git tag -a "${project}.production.${datetime}" -m "${commitMessage}" || _exit $? "Could not create git tag"
 	git push origin --tags || _exit $? "Could not push git tag to GitHub"
 	_exit 0
@@ -50,32 +50,32 @@ delete_ready_branch (){
 		then
 			slack "$2 ${project} ${slackUser}
 ${commitMessage} - <${BUILD_URL}|view build log> " yellow
-			message=`echo "$2
+			message="$2
 ${project} ${slackUser}
 ${BUILD_URL}
-${commitMessage}"`
+${commitMessage}"
 		else
 			slack "Success merging ${project} ${slackUser}
 ${commitMessage} - <${COMMIT_URL}${mergeCommitSha}|view commit> " green
-			message=`echo "Success merging ${project}
+			message="Success merging ${project}
 ${slackUser}
 ${COMMIT_URL}${mergeCommitSha}
-${commitMessage}"`
+${commitMessage}"
 			deploy
 		fi
 	else
 		slack "Failure merging: $2 ${project} ${slackUser}
 ${commitMessage} - <${BUILD_URL}|view build log> " red "$3"
-		message=`echo "Failure merging: $2
+		message="Failure merging: $2
 ${project} ${slackUser}
 ${BUILD_URL}
 ${commitMessage}
-$3"`
+$3"
 	fi
 	step_end
 	echo "
 ${message}"
-	exit $1
+	exit "$1"
 }
 
 _exit (){
@@ -86,7 +86,7 @@ _exit (){
 	else
 		slack "Failure: $2 ${project} ${slackUser}
 ${commitMessage} - <${BUILD_URL}|view build log> " red
-		exit $1
+		exit "$1"
 	fi
 }
 
@@ -102,7 +102,7 @@ step_start(){
 	then
 		step_end
 	fi
-	stepName=`echo "-- $1 --"`
+	stepName=$(echo "-- $1 --")
 	echo "##teamcity[blockOpened name='${stepName}']"
 }
 
@@ -137,7 +137,7 @@ slack(){
 ################################################
 ### START OF SCRIPT - HERE WE GO!
 ################################################
-npmpath=`which npm`
+npmpath=$(which npm)
 alias npm="node --max_old_space_size=8000 ${npmpath}"
 
 if [ "$BRANCH" = 'refs/heads/master' ]
@@ -146,15 +146,15 @@ then
 	exit 0
 fi
 
-project=`node -e "console.log(require('./package.json').name || '')"`
-slackUser=$(curl –s -L 'https://raw.githubusercontent.com/DoctrHealthcare/ci-merge/master/getSlackUser.sh' | bash)
+project=$(node -e "console.log(require('./package.json').name || '')")
+slackUser=$(curl –s -L 'https://raw.githubusercontent.com/practio/ci-merge/master/getSlackUser.sh' | bash)
 commitMessage="${BRANCH}"
 git config user.email "build@practio.com" || delete_ready_branch $? "Could not set git email"
 git config user.name "Teamcity" || delete_ready_branch $? "Could not set git user name"
 
 step_start "Finding author"
 
-lastCommitAuthor=`git log --pretty=format:'%an' -n 1`
+lastCommitAuthor=$(git log --pretty=format:'%an' -n 1)
 
 echo "This will be the author of the merge commit in master: ${lastCommitAuthor} (the last commit in branch was done by this person)"
 
@@ -167,12 +167,12 @@ echo "This will be the author of the merge commit in master: ${lastCommitAuthor}
 
 step_start "Ensuring fetch of pull requests to .git/config"
 
-currentFetch=`grep '	fetch =.\+refs/pull/\*/head:refs/remotes/origin/pullrequest/\*' .git/config`
+currentFetch=$(grep '	fetch =.\+refs/pull/\*/head:refs/remotes/origin/pullrequest/\*' .git/config)
 if [ "$currentFetch" = '' ]
 then
 	# Avoid -i flag for sed, because of platform differences
-	sed 's/\[remote \"origin\"\]/[remote "origin"]\
-	fetch = +refs\/pull\/*\/head:refs\/remotes\/origin\/pullrequest\/*/g' .git/config >.git/config_with_pull_request || delete_ready_branch $? "Could not sed .git/config"
+	sed 's/\[remote \"origin\"\]/[remote "origin"]'\
+'	fetch = +refs\/pull\/*\/head:refs\/remotes\/origin\/pullrequest\/*/g' .git/config >.git/config_with_pull_request || delete_ready_branch $? "Could not sed .git/config"
 	cp .git/config .git/config.backup || delete_ready_branch $? "Could not copy .git/config"
 	mv .git/config_with_pull_request .git/config || delete_ready_branch $? "Could not mv .git/config"
 	echo 'Added fetch of pull request to .git/config:'
@@ -193,7 +193,7 @@ git fetch --prune || delete_ready_branch $? "Could not git fetch"
 
 step_start "Finding pull request that matches current branch"
 
-currentSha=`git log -1 --format="%H"`
+currentSha=$(git log -1 --format="%H")
 echo "Current SHA:"
 echo "${currentSha}"
 
@@ -202,14 +202,14 @@ error='
 Did you try to deploy a branch that is not a pull request?
 Or did you forget to push your changes to github?'
 
-matchingPullRequest=`git show-ref | grep $currentSha | grep 'refs/remotes/origin/pullrequest/'`
+matchingPullRequest=$(git show-ref | grep "$currentSha" | grep 'refs/remotes/origin/pullrequest/')
 if [ "$matchingPullRequest" = '' ] ; then
 	echo "Error finding matching pull request: ${error}" >&2; delete_ready_branch 1 "Could not find matching pull request"
 fi
 echo "Matching pull request:"
 echo "${matchingPullRequest}"
 
-pullRequestNumber=`echo "${matchingPullRequest}" | sed 's/[0-9a-z]* refs\/remotes\/origin\/pullrequest\///g' | sed 's/\s//g'`
+pullRequestNumber=$(echo "${matchingPullRequest}" | sed 's/[0-9a-z]* refs\/remotes\/origin\/pullrequest\///g' | sed 's/\s//g')
 echo "Extracted pull request number:"
 echo "${pullRequestNumber}"
 case ${pullRequestNumber} in
@@ -240,12 +240,12 @@ step_start "Merging ready branch into master, with commit message that closes pu
 
 message_on_commit_error(){
 	commitErrorCode=$1
-	echo 'Commiting changes returned an error (status: ${commitErrorCode}). We are assuming that this is due to no changes, and exiting gracefully'
+	echo "Commiting changes returned an error (status: ${commitErrorCode}). We are assuming that this is due to no changes, and exiting gracefully"
 	delete_ready_branch 0 "No changes in ready build"
 }
 
 git merge --squash "ready/${BRANCH}" || delete_ready_branch $? "Merge conflicts (could not merge)"
-branchWithUnderscore2SpacesAndRemovedTimestamp=`echo "${BRANCH}" | sed -e 's/_/ /g' | sed -e 's/\/[0-9]*s$//g'`
+branchWithUnderscore2SpacesAndRemovedTimestamp=$(echo "${BRANCH}" | sed -e 's/_/ /g' | sed -e 's/\/[0-9]*s$//g')
 if [ "$pullRequestNumber" = 'none' ]
 then
 	commitMessage="${branchWithUnderscore2SpacesAndRemovedTimestamp}"
@@ -256,14 +256,14 @@ echo "Committing squashed merge with message: \"${message}\""
 git commit -m "${commitMessage}" --author "${lastCommitAuthor}" || message_on_commit_error $?
 
 
-mergeCommitSha=`git log -1 --format="%H"`
+mergeCommitSha=$(git log -1 --format="%H")
 
 
 ################################################
 # Check npm version
 ################################################
-npmSpecified=`node -e "console.log(require('./package.json').engines.npm || '')"`
-npmCurrent=`npm --version`
+npmSpecified=$(node -e "console.log(require('./package.json').engines.npm || '')")
+npmCurrent=$(npm --version)
 if [ "${npmSpecified}" != "${npmCurrent}" ]
 then
 	npm install -g "npm@${npmSpecified}" || delete_ready_branch 1 "Could not install npm version ${nodeSpecified}. Changing from current npm version ${nodeSpecified}"
@@ -272,8 +272,8 @@ fi
 ################################################
 # Check node.js version
 ################################################
-nodeSpecified=`node -e "console.log(require('./package.json').engines.node || '')"`
-nodeCurrent=`node --version | sed -e 's/v//g'`
+nodeSpecified=$(node -e "console.log(require('./package.json').engines.node || '')")
+nodeCurrent=$(node --version | sed -e 's/v//g')
 if [ "${nodeSpecified}" != "${nodeCurrent}" ]
 then
 	command -v nvm || (curl -o- https://raw.githubusercontent.com/creationix/nvm/v0.33.8/install.sh | bash && source ~/.bashrc) || delete_ready_branch 1 "Could not install nvm to change node version from ${nodeCurrent} to ${nodeSpecified}"
@@ -294,7 +294,7 @@ npm run teamcity 2>&1 1>&5 | tee err.log 1>&2
 
 ## get exit code of "npm run teamcity"
 code="${PIPESTATUS[0]}"
-err=`node -e "
+err=$(node -e "
 const fs = require('fs');
 const path = require('path');
 let log = fs.readFileSync(path.join(__dirname, 'err.log'), 'utf-8')
@@ -303,7 +303,7 @@ let log = fs.readFileSync(path.join(__dirname, 'err.log'), 'utf-8')
 	.join('\n')
 	.replace(/\|n/g, '\n');
 console.log(log);
-" && rm -f err.log`
+" && rm -f err.log)
 
 if [ "${code}" != 0 ]
 then
