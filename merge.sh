@@ -278,9 +278,9 @@ nodeCurrent=$(node --version | sed -e 's/v//g')
 if [ "${nodeSpecified}" != "${nodeCurrent}" ]
 then
 	step_start "Changing node.js v${nodeCurrent}->v${nodeSpecified}"
-	(chmod 700 "$HOME/.nvm/nvm.sh" && "$HOME/.nvm/nvm.sh" && nvm install "${nodeSpecified}") || echo "Ignoring initial error enabling nvm"
+	("\. $HOME/.nvm/nvm.sh" && nvm install "${nodeSpecified}") || echo "Ignoring initial error enabling nvm"
 	command -v nvm || (curl -o- https://raw.githubusercontent.com/creationix/nvm/v0.33.8/install.sh | bash) || delete_ready_branch 1 "Could not install nvm to change node version from ${nodeCurrent} to ${nodeSpecified}"
-	(chmod 700 "$HOME/.nvm/nvm.sh" && "$HOME/.nvm/nvm.sh" && nvm install "${nodeSpecified}") || delete_ready_branch 1 "Nvm failed to change node version from ${nodeCurrent} to ${nodeSpecified}"
+	("\. $HOME/.nvm/nvm.sh" && nvm install "${nodeSpecified}") || delete_ready_branch 1 "Nvm failed to change node version from ${nodeCurrent} to ${nodeSpecified}"
 fi
 
 ################################################
