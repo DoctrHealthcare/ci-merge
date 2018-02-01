@@ -75,11 +75,26 @@ $3"
 	step_end
 	echo "
 ${message}"
+	reset_npm
 	exit "$1"
+}
+
+################################################
+# Temporary reset of npm to 4.2.0 until we get all builds on ready builds
+################################################
+reset_npm (){
+	npmSpecified="4.2.0"
+	npmCurrent=$(npm --version)
+	if [ "${npmSpecified}" != "${npmCurrent}" ]
+	then
+		step_start "Changing npm v${npmCurrent}->v${npmSpecified}"
+		sudo npm install -g "npm@${npmSpecified}" || slack "WARNING: Could not reset npm to v 4.2.0" red
+	fi
 }
 
 _exit (){
 	step_end
+	reset_npm
 	if [ "$1" = '0' ]
 	then
 		exit
@@ -120,14 +135,14 @@ slack(){
 	then
 		symbol="❌"
 	fi
-	curl -X POST \
+	curl -sS -X POST \
 		"https://slack.com/api/chat.postMessage?token=${SLACK_TOKEN}&channel=${SLACK_CHANNEL_ID}" \
 		--data-urlencode "text=$symbol $1" \
 		-s > /dev/null
 	if [ "$3" != '' ]
 	then
 		step_start "Post error log to slack"
-		curl -X POST "https://slack.com/api/files.upload?token=${SLACK_TOKEN}&filetype=text&filename=${project}.txt&channels=${SLACK_CHANNEL_ID}" -s \
+		curl -sS -X POST "https://slack.com/api/files.upload?token=${SLACK_TOKEN}&filetype=text&filename=${project}.txt&channels=${SLACK_CHANNEL_ID}" -s \
 			-F content="$3"
 	fi
 }
@@ -137,8 +152,8 @@ slack(){
 ################################################
 ### START OF SCRIPT - HERE WE GO!
 ################################################
-npmpath=$(which npm)
-alias npm="node --max_old_space_size=8000 ${npmpath}"
+#npmpath=$(which npm)
+#alias npm="node --max_old_space_size=8000 ${npmpath}"
 
 if [ "$BRANCH" = 'refs/heads/master' ]
 then
@@ -147,7 +162,7 @@ then
 fi
 
 project=$(node -e "console.log(require('./package.json').name || '')")
-slackUser=$(curl –s -L 'https://raw.githubusercontent.com/practio/ci-merge/master/getSlackUser.sh' | bash)
+slackUser=$(curl -sS -L 'https://raw.githubusercontent.com/practio/ci-merge/master/getSlackUser.sh' | bash)
 commitMessage="${BRANCH}"
 git config user.email "build@practio.com" || delete_ready_branch $? "Could not set git email"
 git config user.name "Teamcity" || delete_ready_branch $? "Could not set git user name"
@@ -268,7 +283,7 @@ if [ "${nodeSpecified}" != "${nodeCurrent}" ]
 then
 	step_start "Changing node.js v${nodeCurrent}->v${nodeSpecified}"
 	if [ ! -f "$HOME/.nvm/nvm.sh" ]; then
-		(curl -o- https://raw.githubusercontent.com/creationix/nvm/v0.33.8/install.sh | bash) || delete_ready_branch 1 "Could not install nvm to change node version from ${nodeCurrent} to ${nodeSpecified}"
+		(curl -sS -o- https://raw.githubusercontent.com/creationix/nvm/v0.33.8/install.sh | bash) || delete_ready_branch 1 "Could not install nvm to change node version from ${nodeCurrent} to ${nodeSpecified}"
 	fi
 	(source "$HOME/.nvm/nvm.sh" && nvm install "${nodeSpecified}") || delete_ready_branch 1 "Nvm failed to change node version from ${nodeCurrent} to ${nodeSpecified}"
 fi
