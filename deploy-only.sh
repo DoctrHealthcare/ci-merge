@@ -25,7 +25,6 @@ ${commitMessage} - <${COMMIT_URL}${mergeCommitSha}|view commit> " green
 
 _exit (){
 	step_end
-	reset_npm
 	if [ "$1" = '0' ]
 	then
 		exit
