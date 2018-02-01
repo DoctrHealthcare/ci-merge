@@ -20,7 +20,17 @@ deploy(){
 	fi
 	slack "Success deploying ${project} ${slackUser}
 ${commitMessage} - <${COMMIT_URL}${mergeCommitSha}|view commit> " green
-	_exit 0
+}
+
+build(){
+	step_start "Building"
+	buildscript=$(node -e "console.log(require('./package.json').scripts.build || '')")
+	if [ "buildscript" = '' ]
+	then
+		echo "No npm run build script available"
+	else
+		npm run build || _exit $? "npm run build failed"
+	fi
 }
 
 _exit (){
@@ -130,4 +140,6 @@ else
 	echo "Master has no tag yet, lets deploy (return value when getting tag: ${returnValueWhenGettingTag})"
 fi
 
+build
 deploy
+_exit 0

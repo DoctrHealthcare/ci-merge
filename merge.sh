@@ -6,6 +6,21 @@
 # BUILD_URL         - URL to the build on TeamCity, so we can link in slack messages
 # COMMIT_URL        - URL to the commit on GitHub. This script will add the commit SHA
 
+
+################################################
+# Build
+###############################################
+build(){
+	step_start "Building"
+	buildscript=$(node -e "console.log(require('./package.json').scripts.build || '')")
+	if [ "buildscript" = '' ]
+	then
+		echo "No npm run build script available"
+	else
+		npm run build || _exit $? "npm run build failed"
+	fi
+}
+
 ################################################
 # Deploy to production
 ###############################################
@@ -33,7 +48,6 @@ ${commitMessage} - <${COMMIT_URL}${mergeCommitSha}|view commit> " green
 	datetime=$(date +%Y-%m-%d_%H-%M-%S)
 	git tag -a "${project}.production.${datetime}" -m "${commitMessage}" || _exit $? "Could not create git tag"
 	git push origin --tags || _exit $? "Could not push git tag to GitHub"
-	_exit 0
 }
 
 ################################################
@@ -62,6 +76,7 @@ ${slackUser}
 ${COMMIT_URL}${mergeCommitSha}
 ${commitMessage}"
 			deploy
+			_exit 0
 		fi
 	else
 		slack "Failure merging: $2 ${project} ${slackUser}
@@ -298,6 +313,12 @@ then
 	step_start "Changing npm v${npmCurrent}->v${npmSpecified}"
 	sudo npm install -g "npm@${npmSpecified}" || delete_ready_branch 1 "Could not install npm version ${npmSpecified}. Changing from current npm version ${npmCurrent}"
 fi
+
+################################################
+# Build
+################################################
+
+build
 
 ################################################
 # Run tests, and capture output to stderr
