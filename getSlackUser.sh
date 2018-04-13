@@ -8,7 +8,8 @@
 #Map of emails -> slack user name
 getSlackName(){
 	 node -e "console.log({
-	'allan@878.dk': 'ebdrup'
+	'allan@878.dk': 'ebdrup',
+	'nunodelisboa@gmail.com' : 'Nuno Mendes'
 }['$1']||'Not found')"
 }
 
