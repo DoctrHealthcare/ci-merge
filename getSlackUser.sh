@@ -22,7 +22,7 @@ then
 else
 	slackUser=$(getSlackName "${email}")
 	users=$(curl -X POST "https://slack.com/api/users.list?token=${SLACK_TOKEN}" -s)
-	slackUserId=$(node -e "let users =  ${users}; console.log(users.members.reduce((acc,m)=>{ if(m.name==='${slackUser}'||m.profile.email==='${email}'||m.profile.display_name==='${slackUser}||m.profile.real_name==='${slackUser}'){return m.id} return acc;}, ''))")
+	slackUserId=$(node -e "let users =  ${users}; console.log(users.members.reduce((acc,m)=>{ if(m.name==='${slackUser}'||m.profile.email==='${email}'||m.profile.display_name==='${slackUser}'||m.profile.real_name==='${slackUser}'){return m.id} return acc;}, ''))")
 	slackUser=$(node -e "let users =  ${users}; console.log(users.members.reduce((acc,m)=>{ if(m.name==='${slackUser}'||m.profile.email==='${email}'||m.profile.display_name==='${slackUser}'||m.profile.real_name==='${slackUser}'){return m.name} return acc;}, ''))")
 	if [ "${slackUserId}" = '' ]
 	then
