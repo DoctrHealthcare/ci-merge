@@ -189,6 +189,8 @@ git clean -fx || build_done $? "Could not git clean on master"
 
 step_start "Merging ready branch into master"
 
+echo "BRANCH: ${BRANCH}"
+
 git merge --squash "${BRANCH}" || build_done $? "Merge conflicts (could not merge with master)"
 
 ################################################
