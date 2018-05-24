@@ -191,7 +191,7 @@ step_start "Merging ready branch into master"
 
 echo "BRANCH: ${BRANCH}"
 
-git merge --squash "${BRANCH}" || build_done $? "Merge conflicts (could not merge with master)"
+git merge --squash "origin/pullrequest/${BRANCH}" || build_done $? "Merge conflicts (could not merge with master)"
 
 ################################################
 # Check node.js version
