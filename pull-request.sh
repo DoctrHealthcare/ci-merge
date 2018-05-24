@@ -144,7 +144,29 @@ slackUser=$(curl -sS -L 'https://raw.githubusercontent.com/practio/ci-merge/mast
 git config user.email "build@practio.com" || build_done $? "Could not set git email"
 git config user.name "Teamcity" || build_done $? "Could not set git user name"
 
-step_start "Finding author"
+################################################
+# Make sure git fetches (hidden) Pull Requests
+# by adding:
+# fetch = +refs/pull/*/head:refs/remotes/origin/pullrequest/*
+# to .git/config under the origin remote
+################################################
+
+step_start "Ensuring fetch of pull requests to .git/config"
+
+currentFetch=$(grep '	fetch =.\+refs/pull/\*/head:refs/remotes/origin/pullrequest/\*' .git/config)
+if [ "$currentFetch" = '' ]
+then
+	# Avoid -i flag for sed, because of platform differences
+	sed 's/\[remote \"origin\"\]/[remote "origin"]'\
+'	fetch = +refs\/pull\/*\/head:refs\/remotes\/origin\/pullrequest\/*/g' .git/config >.git/config_with_pull_request || build_done $? "Could not sed .git/config"
+	cp .git/config .git/config.backup || build_done $? "Could not copy .git/config"
+	mv .git/config_with_pull_request .git/config || build_done $? "Could not mv .git/config"
+	echo 'Added fetch of pull request to .git/config:'
+	cat .git/config
+else
+	echo 'Fetch of pull request already in place in .git/config'
+fi
+git fetch --prune || build_done $? "Could not git fetch"
 
 #####################################################################
 # Checkout master
