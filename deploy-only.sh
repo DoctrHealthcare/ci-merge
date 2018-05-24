@@ -25,7 +25,7 @@ ${commitMessage} - <${COMMIT_URL}${mergeCommitSha}|view commit> " green
 build(){
 	step_start "Building"
 	buildscript=$(node -e "console.log(require('./package.json').scripts.build || '')")
-	if [ "buildscript" = '' ]
+	if [ "$buildscript" = '' ]
 	then
 		echo "No npm run build script available"
 	else
