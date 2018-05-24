@@ -10,7 +10,7 @@ getSlackName(){
 	 node -e "console.log({
 	'allan@878.dk': 'ebdrup',
 	'36155117+lopes-d@users.noreply.github.com': 'dl',
-	'nunodelisboa@gmail.com': 'Nuno Mendes'
+	'nunodelisboa@gmail.com': 'nm'
 }['$1']||'Not found')"
 }
 
