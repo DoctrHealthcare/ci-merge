@@ -201,12 +201,9 @@ nodeCurrent=$(node --version | sed -e 's/v//g')
 if [ "${nodeSpecified}" != "${nodeCurrent}" ]
 then
 	step_start "Changing node.js v${nodeCurrent}->v${nodeSpecified}"
-#	if [ ! -f "$HOME/.nvm/nvm.sh" ]; then
-#		(curl -sS -o- https://raw.githubusercontent.com/creationix/nvm/v0.33.8/install.sh | bash) || build_done 1 "Could not install nvm to change node version from ${nodeCurrent} to ${nodeSpecified}"
-#	fi
-#	(source "$HOME/.nvm/nvm.sh" && nvm install "${nodeSpecified}") || build_done 1 "Nvm failed to change node version from ${nodeCurrent} to ${nodeSpecified}"
 	sudo npm install -g n || build_done 1 "Could not install n module to change node version from ${nodeCurrent} to ${nodeSpecified}"
 	sudo n "${nodeSpecified}" || build_done 1 "n module failed to change node version from ${nodeCurrent} to ${nodeSpecified}"
+	echo "Running node.js:"
 	node --version
 fi
 

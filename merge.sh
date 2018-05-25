@@ -54,7 +54,7 @@ ${commitMessage} - <${COMMIT_URL}${mergeCommitSha}|view commit> " green
 # Delete Ready branch
 # Always last thing done after merge (fail or success)
 ################################################
-delete_ready_branch (){
+build_done (){
 	step_start "Deleting ready branch on github"
 	git push origin ":ready/${BRANCH}"
 	step_start "Post to slack"
@@ -179,8 +179,8 @@ fi
 project=$(node -e "console.log(require('./package.json').name || '')")
 slackUser=$(curl -sS -L 'https://raw.githubusercontent.com/practio/ci-merge/master/getSlackUser.sh' | bash)
 commitMessage="${BRANCH}"
-git config user.email "build@practio.com" || delete_ready_branch $? "Could not set git email"
-git config user.name "Teamcity" || delete_ready_branch $? "Could not set git user name"
+git config user.email "build@practio.com" || build_done $? "Could not set git email"
+git config user.name "Teamcity" || build_done $? "Could not set git user name"
 
 step_start "Finding author"
 
@@ -202,15 +202,15 @@ if [ "$currentFetch" = '' ]
 then
 	# Avoid -i flag for sed, because of platform differences
 	sed 's/\[remote \"origin\"\]/[remote "origin"]'\
-'	fetch = +refs\/pull\/*\/head:refs\/remotes\/origin\/pullrequest\/*/g' .git/config >.git/config_with_pull_request || delete_ready_branch $? "Could not sed .git/config"
-	cp .git/config .git/config.backup || delete_ready_branch $? "Could not copy .git/config"
-	mv .git/config_with_pull_request .git/config || delete_ready_branch $? "Could not mv .git/config"
+'	fetch = +refs\/pull\/*\/head:refs\/remotes\/origin\/pullrequest\/*/g' .git/config >.git/config_with_pull_request || build_done $? "Could not sed .git/config"
+	cp .git/config .git/config.backup || build_done $? "Could not copy .git/config"
+	mv .git/config_with_pull_request .git/config || build_done $? "Could not mv .git/config"
 	echo 'Added fetch of pull request to .git/config:'
 	cat .git/config
 else
 	echo 'Fetch of pull request already in place in .git/config'
 fi
-git fetch --prune || delete_ready_branch $? "Could not git fetch"
+git fetch --prune || build_done $? "Could not git fetch"
 
 ########################################################################################
 # Lookup PR number
@@ -234,7 +234,7 @@ Or did you forget to push your changes to github?'
 
 matchingPullRequest=$(git show-ref | grep "$currentSha" | grep 'refs/remotes/origin/pullrequest/')
 if [ "$matchingPullRequest" = '' ] ; then
-	echo "Error finding matching pull request: ${error}" >&2; delete_ready_branch 1 "Could not find matching pull request"
+	echo "Error finding matching pull request: ${error}" >&2; build_done 1 "Could not find matching pull request"
 fi
 echo "Matching pull request:"
 echo "${matchingPullRequest}"
@@ -243,7 +243,7 @@ pullRequestNumber=$(echo "${matchingPullRequest}" | sed 's/[0-9a-z]* refs\/remot
 echo "Extracted pull request number:"
 echo "${pullRequestNumber}"
 case ${pullRequestNumber} in
-	''|*[!0-9]*) echo "Error pull request number does not match number regExp (weird!): ${error}" >&2; delete_ready_branch 1 "Could not find pull request number";;
+	''|*[!0-9]*) echo "Error pull request number does not match number regExp (weird!): ${error}" >&2; build_done 1 "Could not find pull request number";;
 	*) echo "Success. Pull request number passes regExp test for number. Exporting pullRequestNumber=${pullRequestNumber}" ;;
 esac
 
@@ -255,10 +255,10 @@ esac
 
 step_start "Checking out master, resetting (hard), pulling from origin and cleaning"
 
-git checkout master || delete_ready_branch $? "Could not checkout master"
-git reset --hard origin/master || delete_ready_branch $? "Could not reset to master"
-git pull || delete_ready_branch $? "Could not pull master"
-git clean -fx || delete_ready_branch $? "Could not git clean on master"
+git checkout master || build_done $? "Could not checkout master"
+git reset --hard origin/master || build_done $? "Could not reset to master"
+git pull || build_done $? "Could not pull master"
+git clean -fx || build_done $? "Could not git clean on master"
 
 
 ################################################
@@ -271,10 +271,10 @@ step_start "Merging ready branch into master, with commit message that closes pu
 message_on_commit_error(){
 	commitErrorCode=$1
 	echo "Commiting changes returned an error (status: ${commitErrorCode}). We are assuming that this is due to no changes, and exiting gracefully"
-	delete_ready_branch 0 "No changes in ready build"
+	build_done 0 "No changes in ready build"
 }
 
-git merge --squash "ready/${BRANCH}" || delete_ready_branch $? "Merge conflicts (could not merge)"
+git merge --squash "ready/${BRANCH}" || build_done $? "Merge conflicts (could not merge)"
 branchWithUnderscore2SpacesAndRemovedTimestamp=$(echo "${BRANCH}" | sed -e 's/_/ /g' | sed -e 's/\/[0-9]*s$//g')
 if [ "$pullRequestNumber" = 'none' ]
 then
@@ -298,20 +298,23 @@ if [ "${nodeSpecified}" != "${nodeCurrent}" ]
 then
 	step_start "Changing node.js v${nodeCurrent}->v${nodeSpecified}"
 	if [ ! -f "$HOME/.nvm/nvm.sh" ]; then
-		(curl -sS -o- https://raw.githubusercontent.com/creationix/nvm/v0.33.8/install.sh | bash) || delete_ready_branch 1 "Could not install nvm to change node version from ${nodeCurrent} to ${nodeSpecified}"
+		(curl -sS -o- https://raw.githubusercontent.com/creationix/nvm/v0.33.8/install.sh | bash) || build_done 1 "Could not install nvm to change node version from ${nodeCurrent} to ${nodeSpecified}"
 	fi
-	(source "$HOME/.nvm/nvm.sh" && nvm install "${nodeSpecified}") || delete_ready_branch 1 "Nvm failed to change node version from ${nodeCurrent} to ${nodeSpecified}"
+	(source "$HOME/.nvm/nvm.sh" && nvm install "${nodeSpecified}") || build_done 1 "Nvm failed to change node version from ${nodeCurrent} to ${nodeSpecified}"
 fi
 
 ################################################
 # Check npm version
 ################################################
-npmSpecified=$(node -e "console.log(require('./package.json').engines.npm || '')")
-npmCurrent=$(npm --version)
-if [ "${npmSpecified}" != "${npmCurrent}" ]
+nodeSpecified=$(node -e "console.log(require('./package.json').engines.node || '')")
+nodeCurrent=$(node --version | sed -e 's/v//g')
+if [ "${nodeSpecified}" != "${nodeCurrent}" ]
 then
-	step_start "Changing npm v${npmCurrent}->v${npmSpecified}"
-	sudo npm install -g "npm@${npmSpecified}" || delete_ready_branch 1 "Could not install npm version ${npmSpecified}. Changing from current npm version ${npmCurrent}"
+	step_start "Changing node.js v${nodeCurrent}->v${nodeSpecified}"
+	sudo npm install -g n || build_done 1 "Could not install n module to change node version from ${nodeCurrent} to ${nodeSpecified}"
+	sudo n "${nodeSpecified}" || build_done 1 "n module failed to change node version from ${nodeCurrent} to ${nodeSpecified}"
+	echo "Running node.js:"
+	node --version
 fi
 
 ################################################
@@ -325,6 +328,12 @@ build
 ################################################
 
 step_start "Running tests with >npm run teamcity "
+
+teamcityscript=$(node -e "console.log(require('./package.json').scripts.teamcity || '')")
+if [ "$teamcityscript" = '' ]
+then
+	build_done 1 "No 'teamcity' script in package.json"
+fi
 
 ## file descriptor 5 is stdout
 exec 5>&1
@@ -347,7 +356,7 @@ console.log(log);
 
 if [ "${code}" != 0 ]
 then
-	delete_ready_branch "${code}" "Failing test(s)"	"${err}"
+	build_done "${code}" "Failing test(s)"	"${err}"
 fi
 
 ################################################
@@ -356,6 +365,6 @@ fi
 
 step_start "Pushing changes to github master branch"
 
-git push origin master || delete_ready_branch $? "Could not push changes to GitHub"
+git push origin master || build_done $? "Could not push changes to GitHub"
 
-delete_ready_branch 0
+build_done 0
