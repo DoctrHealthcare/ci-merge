@@ -62,14 +62,14 @@ build_done (){
 	then
 		if [ "$2" != '' ]
 		then
-			slack "$2 ${project} ${slackUser}
+			slack "Warning merging: $2 ${project} ${slackUser} ${pullRequestLink}
 ${commitMessage} - <${BUILD_URL}|view build log> " yellow
 			message="$2
 ${project} ${slackUser}
 ${BUILD_URL}
 ${commitMessage}"
 		else
-			slack "Success merging ${project} ${slackUser}
+			slack "Success merging: ${project} ${slackUser} ${pullRequestLink}
 ${commitMessage} - <${COMMIT_URL}${mergeCommitSha}|view commit> " green
 			message="Success merging ${project}
 ${slackUser}
@@ -79,7 +79,7 @@ ${commitMessage}"
 			_exit 0
 		fi
 	else
-		slack "Failure merging: $2 ${project} ${slackUser}
+		slack "Failure merging: $2 ${project} ${slackUser} ${pullRequestLink}
 ${commitMessage} - <${BUILD_URL}|view build log> " red "$3"
 		message="Failure merging: $2
 ${project} ${slackUser}
@@ -176,6 +176,7 @@ then
 	exit 0
 fi
 
+pullRequestLink=""
 project=$(node -e "console.log(require('./package.json').name || '')")
 slackUser=$(curl -sS -L 'https://raw.githubusercontent.com/practio/ci-merge/master/getSlackUser.sh' | bash)
 commitMessage="${BRANCH}"
@@ -246,6 +247,7 @@ case ${pullRequestNumber} in
 	''|*[!0-9]*) echo "Error pull request number does not match number regExp (weird!): ${error}" >&2; build_done 1 "Could not find pull request number";;
 	*) echo "Success. Pull request number passes regExp test for number. Exporting pullRequestNumber=${pullRequestNumber}" ;;
 esac
+pullRequestLink="<https://github.com/practio/${project}/pull/${pullRequestNumber}|PR#${pullRequestNumber}>"
 
 #####################################################################
 # Checkout master
