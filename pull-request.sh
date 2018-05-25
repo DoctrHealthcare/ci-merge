@@ -207,6 +207,7 @@ then
 #	(source "$HOME/.nvm/nvm.sh" && nvm install "${nodeSpecified}") || build_done 1 "Nvm failed to change node version from ${nodeCurrent} to ${nodeSpecified}"
 	sudo npm install -g n || build_done 1 "Could not install n module to change node version from ${nodeCurrent} to ${nodeSpecified}"
 	sudo n "${nodeSpecified}" || build_done 1 "n module failed to change node version from ${nodeCurrent} to ${nodeSpecified}"
+	node --version
 fi
 
 ################################################
@@ -231,6 +232,11 @@ build
 ################################################
 
 step_start "Running tests with >npm run teamcity "
+teamcityscript=$(node -e "console.log(require('./package.json').scripts.teamcity || '')")
+if [ "$teamcityscript" = '' ]
+then
+	build_done 1 "No 'teamcity' script in package.json"
+fi
 
 ## file descriptor 5 is stdout
 exec 5>&1
