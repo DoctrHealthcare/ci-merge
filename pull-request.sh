@@ -28,15 +28,13 @@ build_done (){
 	then
 		if [ "$2" != '' ]
 		then
-			slack "Pull-Request Warning: <https://github.com/practio/${project}/pull/${BRANCH}|PR#${BRANCH}>
-			$2 ${project} ${slackUser} - <${BUILD_URL}|view build log> " yellow
+			slack "Pull-Request Warning: <https://github.com/practio/${project}/pull/${BRANCH}|PR#${BRANCH}> $2 ${project} ${slackUser} - <${BUILD_URL}|view build log> " yellow
 			message="Pull-Request Warning $2
 ${BRANCH}
 ${project} ${slackUser}
 ${BUILD_URL}"
 		else
-			slack "Pull Request Success: <https://github.com/practio/${project}/pull/${BRANCH}|PR#${BRANCH}>
-			${project} ${slackUser} - <${BUILD_URL}|view build log> " green
+			slack "Pull Request Success: <https://github.com/practio/${project}/pull/${BRANCH}|PR#${BRANCH}> ${project} ${slackUser} - <${BUILD_URL}|view build log> " green
 			message="Pull Request Success ${BRANCH}
 ${project}
 ${slackUser}
@@ -44,8 +42,7 @@ ${slackUser}
 			_exit 0
 		fi
 	else
-		slack "Pull Request failure: <https://github.com/practio/${project}/pull/${BRANCH}|PR#${BRANCH}>
-		$2 ${project} ${slackUser} - <${BUILD_URL}|view build log> " red "$3"
+		slack "Pull Request failure: <https://github.com/practio/${project}/pull/${BRANCH}|PR#${BRANCH}> $2 ${project} ${slackUser} - <${BUILD_URL}|view build log> " red "$3"
 		message="Pull Request failure: $2
 ${BRANCH}
 ${project} ${slackUser}
