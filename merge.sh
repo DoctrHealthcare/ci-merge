@@ -35,8 +35,8 @@ deploy(){
 	else
 		npm run deploy || _exit $? "npm run deploy failed"
 	fi
-	slack "Success deploying ${project} ${slackUser}
-${commitMessage} - <${COMMIT_URL}${mergeCommitSha}|view commit> " green
+	slack "Success deploying ${project} ${slackUser} ${pullRequestLink}
+${commitMessage} - <${COMMIT_URL}${mergeCommitSha}|view commit> - <${BUILD_URL}|view build log>" green
 
 	################################################
 	# Add git tag and push to GitHub
@@ -70,7 +70,7 @@ ${BUILD_URL}
 ${commitMessage}"
 		else
 			slack "Success merging: ${project} ${slackUser} ${pullRequestLink}
-${commitMessage} - <${COMMIT_URL}${mergeCommitSha}|view commit> " green
+${commitMessage} - <${COMMIT_URL}${mergeCommitSha}|view commit> - <${BUILD_URL}|view build log>" green
 			message="Success merging ${project}
 ${slackUser}
 ${COMMIT_URL}${mergeCommitSha}
