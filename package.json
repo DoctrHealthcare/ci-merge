@@ -1,0 +1,25 @@
+{
+  "name": "ci-merge",
+  "version": "1.0.0",
+  "description": "Bash scripts for CI server",
+  "main": "test.js",
+  "scripts": {
+    "test": "node -r esm test.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/practio/ci-merge.git"
+  },
+  "keywords": [
+    "ci"
+  ],
+  "author": "Practio",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/practio/ci-merge/issues"
+  },
+  "homepage": "https://github.com/practio/ci-merge#readme",
+  "dependencies": {
+    "esm": "^3.0.43"
+  }
+}

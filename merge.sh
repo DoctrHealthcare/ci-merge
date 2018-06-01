@@ -35,7 +35,7 @@ deploy(){
 	else
 		npm run deploy || _exit $? "npm run deploy failed"
 	fi
-	slack "Success deploying ${project} ${slackUser} ${pullRequestLink}
+	slack "Success deploying <https://github.com/practio/${project}|${project}> ${slackUser} ${pullRequestLink}
 ${commitMessage} - <${COMMIT_URL}${mergeCommitSha}|view commit> - <${BUILD_URL}|view build log>" green
 
 	################################################
@@ -62,14 +62,14 @@ build_done (){
 	then
 		if [ "$2" != '' ]
 		then
-			slack "Warning merging: $2 ${project} ${slackUser} ${pullRequestLink}
+			slack "Warning merging: $2 <https://github.com/practio/${project}|${project}> ${slackUser} ${pullRequestLink}
 ${commitMessage} - <${BUILD_URL}|view build log> " yellow
 			message="$2
 ${project} ${slackUser}
 ${BUILD_URL}
 ${commitMessage}"
 		else
-			slack "Success merging: ${project} ${slackUser} ${pullRequestLink}
+			slack "Success merging: <https://github.com/practio/${project}|${project}> ${slackUser} ${pullRequestLink}
 ${commitMessage} - <${COMMIT_URL}${mergeCommitSha}|view commit> - <${BUILD_URL}|view build log>" green
 			message="Success merging ${project}
 ${slackUser}
@@ -79,7 +79,7 @@ ${commitMessage}"
 			_exit 0
 		fi
 	else
-		slack "Failure merging: $2 ${project} ${slackUser} ${pullRequestLink}
+		slack "Failure merging: $2 <https://github.com/practio/${project}|${project}> ${slackUser} ${pullRequestLink}
 ${commitMessage} - <${BUILD_URL}|view build log> " red "$3"
 		message="Failure merging: $2
 ${project} ${slackUser}
@@ -114,7 +114,7 @@ _exit (){
 	then
 		exit
 	else
-		slack "Failure: $2 ${project} ${slackUser}
+		slack "Failure: $2 <https://github.com/practio/${project}|${project}> ${slackUser}
 ${commitMessage} - <${BUILD_URL}|view build log> " red
 		exit "$1"
 	fi
