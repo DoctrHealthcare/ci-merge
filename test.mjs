@@ -7,6 +7,7 @@ fs.readdirSync(__dirname)
 .forEach(file => {
     exec('shellcheck ' + path.join(__dirname, file), function(err, stdout, stderr) {
         if (null !== err){
+            console.log(`${file}\t❌ ERROR`);
             console.error(stderr);
             console.error(stdout);
             process.exit(1);
