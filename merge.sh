@@ -90,26 +90,11 @@ $3"
 	step_end
 	echo "
 ${message}"
-	reset_npm
 	exit "$1"
-}
-
-################################################
-# Temporary reset of npm to 4.2.0 until we get all builds on ready builds
-################################################
-reset_npm (){
-	npmSpecified="4.2.0"
-	npmCurrent=$(npm --version)
-	if [ "${npmSpecified}" != "${npmCurrent}" ]
-	then
-		step_start "Changing npm v${npmCurrent}->v${npmSpecified}"
-		sudo npm install -g "npm@${npmSpecified}" || slack "WARNING: Could not reset npm to v 4.2.0" red
-	fi
 }
 
 _exit (){
 	step_end
-	reset_npm
 	if [ "$1" = '0' ]
 	then
 		exit
