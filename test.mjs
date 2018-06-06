@@ -1,7 +1,7 @@
 import { exec } from 'child_process';
 import fs from 'fs';
 import path from 'path';
-
+const __dirname = path.dirname(new URL(import.meta.url).pathname);
 fs.readdirSync(__dirname)
 .filter(filename => filename.endsWith('.sh'))
 .forEach(file => {
@@ -12,5 +12,5 @@ fs.readdirSync(__dirname)
             process.exit(1);
         }
     });
-    console.log(`${file} OK`);
+    console.log(`${file}\t✅ OK`);
 });

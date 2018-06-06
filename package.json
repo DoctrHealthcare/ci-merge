@@ -4,7 +4,7 @@
   "description": "Bash scripts for CI server",
   "main": "test.js",
   "scripts": {
-    "test": "node -r esm test.js"
+    "test": "node --no-warnings --experimental-modules test.mjs"
   },
   "repository": {
     "type": "git",
@@ -18,8 +18,5 @@
   "bugs": {
     "url": "https://github.com/practio/ci-merge/issues"
   },
-  "homepage": "https://github.com/practio/ci-merge#readme",
-  "dependencies": {
-    "esm": "^3.0.43"
-  }
+  "homepage": "https://github.com/practio/ci-merge#readme"
 }
