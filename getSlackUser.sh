@@ -12,7 +12,7 @@ getSlackName(){
 	'36155117+lopes-d@users.noreply.github.com': 'dl',
 	'nunodelisboa@gmail.com': 'nuno',
 	'mhcservenka@gmail.com': 'martincservenka',
-	'bku@doctr.dk' : 'brian'
+	'sotirovicj@gmail.com': 'Jelena',
 }['$1']||'Not found')"
 }
 
