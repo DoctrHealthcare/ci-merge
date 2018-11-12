@@ -93,7 +93,7 @@ slack(){
 #npmpath=$(which npm)
 #alias npm="node --max_old_space_size=8000 ${npmpath}"
 
-project=$(node -e "console.log(require('./package.json').name || '')")
+project=$(node -e "console.log((require('./package.json').name || '').replace('@','').replace('/','-'))")
 slackUser=$(curl -sS -L 'https://raw.githubusercontent.com/practio/ci-merge/master/getSlackUser.sh' | bash)
 mergeCommitSha=$(git log -1 --format="%H")
 

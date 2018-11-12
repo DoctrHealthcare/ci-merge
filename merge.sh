@@ -162,7 +162,7 @@ then
 fi
 
 pullRequestLink=""
-project=$(node -e "console.log(require('./package.json').name || '')")
+project=$(node -e "console.log((require('./package.json').name || '').replace('@','').replace('/','-'))")
 slackUser=$(curl -sS -L 'https://raw.githubusercontent.com/practio/ci-merge/master/getSlackUser.sh' | bash)
 commitMessage="${BRANCH}"
 git config user.email "build@practio.com" || build_done $? "Could not set git email"

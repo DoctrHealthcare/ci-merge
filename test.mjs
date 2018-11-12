@@ -11,7 +11,8 @@ fs.readdirSync(__dirname)
             console.error(stderr);
             console.error(stdout);
             process.exit(1);
+        } else {
+            console.log(`${file}\t✅ OK`);
         }
     });
-    console.log(`${file}\t✅ OK`);
 });
