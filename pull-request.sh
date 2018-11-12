@@ -28,13 +28,13 @@ build_done (){
 	then
 		if [ "$2" != '' ]
 		then
-			slack "Pull-Request Warning: <https://github.com/practio/${project}/pull/${BRANCH}|PR#${BRANCH}> $2 <https://github.com/practio/${project}|${project}> ${slackUser} - <${BUILD_URL}|view build log> " yellow
+			slack "Pull-Request Warning: ${slackPR} $2 ${slackProject} ${slackUser} - <${BUILD_URL}|view build log> " yellow
 			message="Pull-Request Warning $2
 ${BRANCH}
 ${project} ${slackUser}
 ${BUILD_URL}"
 		else
-			slack "Pull Request Success: <https://github.com/practio/${project}/pull/${BRANCH}|PR#${BRANCH}> <https://github.com/practio/${project}|${project}> ${slackUser} - <${BUILD_URL}|view build log> " green
+			slack "Pull Request Success: ${slackPR} ${slackProject} ${slackUser} - <${BUILD_URL}|view build log> " green
 			message="Pull Request Success ${BRANCH}
 ${project}
 ${slackUser}
@@ -42,7 +42,7 @@ ${slackUser}
 			_exit 0
 		fi
 	else
-		slack "Pull Request failure: <https://github.com/practio/${project}/pull/${BRANCH}|PR#${BRANCH}> $2 <https://github.com/practio/${project}|${project}> ${slackUser} - <${BUILD_URL}|view build log> " red "$3"
+		slack "Pull Request failure: ${slackPR} $2 ${slackProject} ${slackUser} - <${BUILD_URL}|view build log> " red "$3"
 		message="Pull Request failure: $2
 ${BRANCH}
 ${project} ${slackUser}
@@ -64,7 +64,7 @@ _exit (){
 	then
 		exit
 	else
-		slack "Pull Request failure: <https://github.com/practio/${project}/pull/${BRANCH}|PR#${BRANCH}> $2 <https://github.com/practio/${project}|${project}> ${slackUser} - <${BUILD_URL}|view build log> " red "$3"
+		slack "Pull Request failure: ${slackPR} $2 ${slackProject} ${slackUser} - <${BUILD_URL}|view build log> " red "$3"
 		exit "$1"
 	fi
 }
@@ -106,7 +106,7 @@ slack(){
 	if [ "$3" != '' ]
 	then
 		step_start "Post error log to slack"
-		curl -sS -X POST "https://slack.com/api/files.upload?token=${SLACK_TOKEN}&filetype=text&filename=${project}.txt&channels=${SLACK_CHANNEL_ID}" -s \
+		curl -sS -X POST "https://slack.com/api/files.upload?token=${SLACK_TOKEN}&filetype=text&filename=${githubProject}.txt&channels=${SLACK_CHANNEL_ID}" -s \
 			-F content="$3"
 	fi
 }
@@ -123,7 +123,11 @@ then
 	echo "master branch, doing nothing"
 	exit 0
 fi
-project=$(node -e "console.log((require('./package.json').name || '').replace('@','').replace('/','-'))")
+project=$(node -e "console.log(require('./package.json').name || '')")
+githubRemote=$(git remote -v | grep origin | grep fetch | grep github)
+githubProject=$(node -e "console.log('$githubRemote'.split(':').pop().split('.').shift())")
+slackProject="<https://github.com/${githubProject}|${project}>"
+slackPR="<https://github.com/${githubProject}/pull/${BRANCH}|PR#${BRANCH}>"
 slackUser=$(curl -sS -L 'https://raw.githubusercontent.com/practio/ci-merge/master/getSlackUser.sh' | bash)
 git config user.email "build@practio.com" || build_done $? "Could not set git email"
 git config user.name "Teamcity" || build_done $? "Could not set git user name"

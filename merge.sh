@@ -35,7 +35,7 @@ deploy(){
 	else
 		npm run deploy || _exit $? "npm run deploy failed"
 	fi
-	slack "Success deploying <https://github.com/practio/${project}|${project}> ${slackUser} ${pullRequestLink}
+	slack "Success deploying ${slackProject} ${slackUser} ${pullRequestLink}
 ${commitMessage} - <${COMMIT_URL}${mergeCommitSha}|view commit> - <${BUILD_URL}|view build log>" green
 
 	################################################
@@ -62,14 +62,14 @@ build_done (){
 	then
 		if [ "$2" != '' ]
 		then
-			slack "Warning merging: $2 <https://github.com/practio/${project}|${project}> ${slackUser} ${pullRequestLink}
+			slack "Warning merging: $2 ${slackProject} ${slackUser} ${pullRequestLink}
 ${commitMessage} - <${BUILD_URL}|view build log> " yellow
 			message="$2
 ${project} ${slackUser}
 ${BUILD_URL}
 ${commitMessage}"
 		else
-			slack "Success merging: <https://github.com/practio/${project}|${project}> ${slackUser} ${pullRequestLink}
+			slack "Success merging: ${slackProject} ${slackUser} ${pullRequestLink}
 ${commitMessage} - <${COMMIT_URL}${mergeCommitSha}|view commit> - <${BUILD_URL}|view build log>" green
 			message="Success merging ${project}
 ${slackUser}
@@ -79,7 +79,7 @@ ${commitMessage}"
 			_exit 0
 		fi
 	else
-		slack "Failure merging: $2 <https://github.com/practio/${project}|${project}> ${slackUser} ${pullRequestLink}
+		slack "Failure merging: $2 ${slackProject}> ${slackUser} ${pullRequestLink}
 ${commitMessage} - <${BUILD_URL}|view build log> " red "$3"
 		message="Failure merging: $2
 ${project} ${slackUser}
@@ -99,7 +99,7 @@ _exit (){
 	then
 		exit
 	else
-		slack "Failure: $2 <https://github.com/practio/${project}|${project}> ${slackUser}
+		slack "Failure: $2 ${slackProject} ${slackUser}
 ${commitMessage} - <${BUILD_URL}|view build log> " red
 		exit "$1"
 	fi
@@ -142,7 +142,7 @@ slack(){
 	if [ "$3" != '' ]
 	then
 		step_start "Post error log to slack"
-		curl -sS -X POST "https://slack.com/api/files.upload?token=${SLACK_TOKEN}&filetype=text&filename=${project}.txt&channels=${SLACK_CHANNEL_ID}" -s \
+		curl -sS -X POST "https://slack.com/api/files.upload?token=${SLACK_TOKEN}&filetype=text&filename=${githubProject}.txt&channels=${SLACK_CHANNEL_ID}" -s \
 			-F content="$3"
 	fi
 }
@@ -162,7 +162,10 @@ then
 fi
 
 pullRequestLink=""
-project=$(node -e "console.log((require('./package.json').name || '').replace('@','').replace('/','-'))")
+project=$(node -e "console.log(require('./package.json').name || '')")
+githubRemote=$(git remote -v | grep origin | grep fetch | grep github)
+githubProject=$(node -e "console.log('$githubRemote'.split(':').pop().split('.').shift())")
+slackProject="<https://github.com/${githubProject}|${project}>"
 slackUser=$(curl -sS -L 'https://raw.githubusercontent.com/practio/ci-merge/master/getSlackUser.sh' | bash)
 commitMessage="${BRANCH}"
 git config user.email "build@practio.com" || build_done $? "Could not set git email"

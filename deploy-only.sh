@@ -18,7 +18,7 @@ deploy(){
 	else
 		npm run deploy || _exit $? "npm run deploy failed"
 	fi
-	slack "Success deploying ${project} ${slackUser}
+	slack "Success deploying ${slackProject} ${slackUser}
 ${commitMessage} - <${COMMIT_URL}${mergeCommitSha}|view commit> " green
 }
 
@@ -39,7 +39,7 @@ _exit (){
 	then
 		exit
 	else
-		slack "Failure: $2 ${project} ${slackUser}
+		slack "Failure: $2 ${slackProject} ${slackUser}
 ${commitMessage} - <${BUILD_URL}|view build log> " red
 		exit "$1"
 	fi
@@ -82,7 +82,7 @@ slack(){
 	if [ "$3" != '' ]
 	then
 		step_start "Post error log to slack"
-		curl -sS -X POST "https://slack.com/api/files.upload?token=${SLACK_TOKEN}&filetype=text&filename=${project}.txt&channels=${SLACK_CHANNEL_ID}" -s \
+		curl -sS -X POST "https://slack.com/api/files.upload?token=${SLACK_TOKEN}&filetype=text&filename=${githubProject}.txt&channels=${SLACK_CHANNEL_ID}" -s \
 			-F content="$3"
 	fi
 }
@@ -93,7 +93,10 @@ slack(){
 #npmpath=$(which npm)
 #alias npm="node --max_old_space_size=8000 ${npmpath}"
 
-project=$(node -e "console.log((require('./package.json').name || '').replace('@','').replace('/','-'))")
+project=$(node -e "console.log(require('./package.json').name || '')")
+githubRemote=$(git remote -v | grep origin | grep fetch | grep github)
+githubProject=$(node -e "console.log('$githubRemote'.split(':').pop().split('.').shift())")
+slackProject="<https://github.com/${githubProject}|${project}>"
 slackUser=$(curl -sS -L 'https://raw.githubusercontent.com/practio/ci-merge/master/getSlackUser.sh' | bash)
 mergeCommitSha=$(git log -1 --format="%H")
 
