@@ -45,6 +45,19 @@ remove_npm_token(){
 	fi
 }
 
+prebuild(){
+	step_start "Prebuilding"
+	prebuildscript=$(node -e "console.log(require('./package.json').scripts.prebuild || '')")
+	if [ "$prebuildscript" = '' ]
+	then
+		echo "No npm run prebuild script available"
+	else
+		add_npm_token || _exit $? "Adding NPM_TOKEN env var to .npmrc failed"
+		npm run prebuild || _exit $? "npm run prebuild failed"
+		remove_npm_token || _exit $? "Removing NPM_TOKEN env var from .npmrc failed"
+	fi
+}
+
 build(){
 	step_start "Building"
 	buildscript=$(node -e "console.log(require('./package.json').scripts.build || '')")
@@ -168,6 +181,7 @@ else
 	echo "Master has no tag yet, lets deploy (return value when getting tag: ${returnValueWhenGettingTag})"
 fi
 
+prebuild
 build
 deploy
 _exit 0
