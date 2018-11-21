@@ -17,7 +17,32 @@ build(){
 	then
 		echo "No npm run build script available"
 	else
+		add_npm_token || _exit $? "Adding NPM_TOKEN env var to .npmrc failed"
 		npm run build || _exit $? "npm run build failed"
+		remove_npm_token || _exit $? "Removing NPM_TOKEN env var from .npmrc failed"
+	fi
+}
+
+add_npm_token(){
+	if [ ! -z "$NPM_TOKEN" ]; then
+		if [ -f .npmrc ]; then
+			mv .npmrc .npmrc-backup
+		fi
+		# shellcheck disable=SC2016
+		if [ -f .npmrc ]; then
+			echo '//registry.npmjs.org/:_authToken=${NPM_TOKEN}' | cat - .npmrc-backuop >  .npmrc
+		else
+			echo '//registry.npmjs.org/:_authToken=${NPM_TOKEN}' > .npmrc
+		fi
+	fi
+}
+
+remove_npm_token(){
+	if [ ! -z "$NPM_TOKEN" ]; then
+		rm .npmrc
+		if [ -f .npmrc-backup ]; then
+    		mv .npmrc-backup .npmrc
+		fi
 	fi
 }
 
@@ -33,7 +58,9 @@ deploy(){
 	then
 		_exit 0 "No npm run deploy script available"
 	else
+		add_npm_token || _exit $? "Adding NPM_TOKEN env var to .npmrc failed"
 		npm run deploy || _exit $? "npm run deploy failed"
+		remove_npm_token || _exit $? "Removing NPM_TOKEN env var from .npmrc failed"
 	fi
 	slack "Success deploying ${slackProject} ${slackUser} ${pullRequestLink}
 ${commitMessage} - <${COMMIT_URL}${mergeCommitSha}|view commit> - <${BUILD_URL}|view build log>" green
