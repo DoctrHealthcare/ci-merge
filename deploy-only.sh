@@ -16,9 +16,7 @@ deploy(){
 	then
 		_exit 0 "No npm run deploy script available"
 	else
-		add_npm_token || _exit $? "Adding NPM_TOKEN env var to .npmrc failed"
 		npm run deploy || _exit $? "npm run deploy failed"
-		remove_npm_token || _exit $? "Removing NPM_TOKEN env var from .npmrc failed"
 	fi
 	slack "Success deploying ${slackProject} ${slackUser}
 ${commitMessage} - <${COMMIT_URL}${mergeCommitSha}|view commit> " green
