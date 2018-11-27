@@ -32,8 +32,10 @@ build(){
 	else
 		add_npm_token || _exit $? "Adding NPM_TOKEN env var to .npmrc failed"
 		case ${BRANCH} in
-			*_package_update)
-				npm install || _exit $? "npm install failed (_package_update branch name)"
+		*_package_update)
+			npm install || _exit $? "npm install failed (_package_update branch name)"
+			git add package-lock.json || _exit $? "Could not git add package-lock.json"
+			git commit -m "update package-lock.json" --author "${lastCommitAuthor}" || _exit $? "Could not commit package-lock.json"
 		esac
 		npm run build || _exit $? "npm run build failed"
 		remove_npm_token || _exit $? "Removing NPM_TOKEN env var from .npmrc failed"
