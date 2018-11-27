@@ -215,65 +215,77 @@ lastCommitAuthor=$(git log --pretty=format:'%an' -n 1)
 
 echo "This will be the author of the merge commit in master: ${lastCommitAuthor} (the last commit in branch was done by this person)"
 
-################################################
-# Make sure git fetches (hidden) Pull Requests
-# by adding:
-# fetch = +refs/pull/*/head:refs/remotes/origin/pullrequest/*
-# to .git/config under the origin remote
-################################################
 
-step_start "Ensuring fetch of pull requests to .git/config"
+case ${BRANCH} in
+*_no_pull_request)
+	## If the ready branch ends with "_no_pull_request" we will not try to match to a pull request. This is for merging latest texts
+	step_start "No pull request - Git fetching"
+	pullRequestNumber="none"
+	pullRequestLink=""
+	git fetch --prune || delete_ready_branch $? "Could not git fetch"
+	;;
+*)
 
-currentFetch=$(grep '	fetch =.\+refs/pull/\*/head:refs/remotes/origin/pullrequest/\*' .git/config)
-if [ "$currentFetch" = '' ]
-then
-	# Avoid -i flag for sed, because of platform differences
-	sed 's/\[remote \"origin\"\]/[remote "origin"]'\
-'	fetch = +refs\/pull\/*\/head:refs\/remotes\/origin\/pullrequest\/*/g' .git/config >.git/config_with_pull_request || build_done $? "Could not sed .git/config"
-	cp .git/config .git/config.backup || build_done $? "Could not copy .git/config"
-	mv .git/config_with_pull_request .git/config || build_done $? "Could not mv .git/config"
-	echo 'Added fetch of pull request to .git/config:'
-	cat .git/config
-else
-	echo 'Fetch of pull request already in place in .git/config'
-fi
-git fetch --prune || build_done $? "Could not git fetch"
+	################################################
+	# Make sure git fetches (hidden) Pull Requests
+	# by adding:
+	# fetch = +refs/pull/*/head:refs/remotes/origin/pullrequest/*
+	# to .git/config under the origin remote
+	################################################
 
-########################################################################################
-# Lookup PR number
-# By looking the SHA checksum of the current branchs latests commit
-# And finding a pull request that has a matching SHA checksum as the lastest commit
-# This enforces a restriction that you can only merge branches that match a pull request
-# And using the number of the pull request later, we can close the pull request
-# by making the squash merge commit message include "fixes #[pull request number] ..."
-########################################################################################
+	step_start "Ensuring fetch of pull requests to .git/config"
 
-step_start "Finding pull request that matches current branch"
+	currentFetch=$(grep '	fetch =.\+refs/pull/\*/head:refs/remotes/origin/pullrequest/\*' .git/config)
+	if [ "$currentFetch" = '' ]
+	then
+		# Avoid -i flag for sed, because of platform differences
+		sed 's/\[remote \"origin\"\]/[remote "origin"]'\
+	'	fetch = +refs\/pull\/*\/head:refs\/remotes\/origin\/pullrequest\/*/g' .git/config >.git/config_with_pull_request || build_done $? "Could not sed .git/config"
+		cp .git/config .git/config.backup || build_done $? "Could not copy .git/config"
+		mv .git/config_with_pull_request .git/config || build_done $? "Could not mv .git/config"
+		echo 'Added fetch of pull request to .git/config:'
+		cat .git/config
+	else
+		echo 'Fetch of pull request already in place in .git/config'
+	fi
+	git fetch --prune || build_done $? "Could not git fetch"
 
-currentSha=$(git log -1 --format="%H")
-echo "Current SHA:"
-echo "${currentSha}"
+	########################################################################################
+	# Lookup PR number
+	# By looking the SHA checksum of the current branchs latests commit
+	# And finding a pull request that has a matching SHA checksum as the lastest commit
+	# This enforces a restriction that you can only merge branches that match a pull request
+	# And using the number of the pull request later, we can close the pull request
+	# by making the squash merge commit message include "fixes #[pull request number] ..."
+	########################################################################################
+
+	step_start "Finding pull request that matches current branch"
+
+	currentSha=$(git log -1 --format="%H")
+	echo "Current SHA:"
+	echo "${currentSha}"
 
 
-error='
-Did you try to deploy a branch that is not a pull request?
-Or did you forget to push your changes to github?'
+	error='
+	Did you try to deploy a branch that is not a pull request?
+	Or did you forget to push your changes to github?'
 
-matchingPullRequest=$(git show-ref | grep "$currentSha" | grep 'refs/remotes/origin/pullrequest/')
-if [ "$matchingPullRequest" = '' ] ; then
-	echo "Error finding matching pull request: ${error}" >&2; build_done 1 "Could not find matching pull request"
-fi
-echo "Matching pull request:"
-echo "${matchingPullRequest}"
+	matchingPullRequest=$(git show-ref | grep "$currentSha" | grep 'refs/remotes/origin/pullrequest/')
+	if [ "$matchingPullRequest" = '' ] ; then
+		echo "Error finding matching pull request: ${error}" >&2; build_done 1 "Could not find matching pull request"
+	fi
+	echo "Matching pull request:"
+	echo "${matchingPullRequest}"
 
-pullRequestNumber=$(echo "${matchingPullRequest}" | sed 's/[0-9a-z]* refs\/remotes\/origin\/pullrequest\///g' | sed 's/\s//g')
-echo "Extracted pull request number:"
-echo "${pullRequestNumber}"
-case ${pullRequestNumber} in
-	''|*[!0-9]*) echo "Error pull request number does not match number regExp (weird!): ${error}" >&2; build_done 1 "Could not find pull request number";;
-	*) echo "Success. Pull request number passes regExp test for number. Exporting pullRequestNumber=${pullRequestNumber}" ;;
+	pullRequestNumber=$(echo "${matchingPullRequest}" | sed 's/[0-9a-z]* refs\/remotes\/origin\/pullrequest\///g' | sed 's/\s//g')
+	echo "Extracted pull request number:"
+	echo "${pullRequestNumber}"
+	case ${pullRequestNumber} in
+		''|*[!0-9]*) echo "Error pull request number does not match number regExp (weird!): ${error}" >&2; build_done 1 "Could not find pull request number";;
+		*) echo "Success. Pull request number passes regExp test for number. Exporting pullRequestNumber=${pullRequestNumber}" ;;
+	esac
+	pullRequestLink="<https://github.com/practio/${project}/pull/${pullRequestNumber}|PR#${pullRequestNumber}>"
 esac
-pullRequestLink="<https://github.com/practio/${project}/pull/${pullRequestNumber}|PR#${pullRequestNumber}>"
 
 #####################################################################
 # Checkout master
