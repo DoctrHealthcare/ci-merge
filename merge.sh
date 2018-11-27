@@ -31,6 +31,10 @@ build(){
 		echo "No npm run build script available"
 	else
 		add_npm_token || _exit $? "Adding NPM_TOKEN env var to .npmrc failed"
+		case ${BRANCH} in
+			*_package_update)
+				npm install || _exit $? "npm install failed (_package_update branch name)"
+		esac
 		npm run build || _exit $? "npm run build failed"
 		remove_npm_token || _exit $? "Removing NPM_TOKEN env var from .npmrc failed"
 	fi
@@ -217,7 +221,7 @@ echo "This will be the author of the merge commit in master: ${lastCommitAuthor}
 
 
 case ${BRANCH} in
-*_no_pull_request)
+*_package_update)
 	## If the ready branch ends with "_no_pull_request" we will not try to match to a pull request. This is for merging latest texts
 	step_start "No pull request - Git fetching"
 	pullRequestNumber="none"
