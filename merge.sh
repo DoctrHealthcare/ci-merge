@@ -49,7 +49,7 @@ add_npm_token(){
 		fi
 		# shellcheck disable=SC2016
 		if [ -f .npmrc ]; then
-			echo '//registry.npmjs.org/:_authToken=${NPM_TOKEN}' | cat - .npmrc-backuop >  .npmrc
+			echo '//registry.npmjs.org/:_authToken=${NPM_TOKEN}' | cat - .npmrc-backup >  .npmrc
 		else
 			echo '//registry.npmjs.org/:_authToken=${NPM_TOKEN}' > .npmrc
 		fi
