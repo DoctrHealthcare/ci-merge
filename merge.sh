@@ -34,6 +34,8 @@ build(){
 		case ${BRANCH} in
 		*_package_update)
 			echo "Doing npm install because we are running a package update ready branch"
+			echo "ls"
+			ls
 			pwd
 			npm install || _exit $? "npm install failed (_package_update branch name)"
 			git add package-lock.json || _exit $? "Could not git add package-lock.json"
@@ -235,7 +237,6 @@ case ${BRANCH} in
 	step_start "No pull request - Git fetching"
 	pullRequestNumber="none"
 	pullRequestLink=""
-	git fetch --prune || delete_ready_branch $? "Could not git fetch"
 	;;
 *)
 
