@@ -39,7 +39,9 @@ build(){
 			git add package-lock.json || _exit $? "Could not git add package-lock.json"
 			git commit -m "update package-lock.json" --author "${lastCommitAuthor}" || _exit $? "Could not commit package-lock.json"
 			pwd
+			echo "webpack.config.client.babel.js"
 			cat webpack.config.client.babel.js
+			echo "ls"
 			ls
 		esac
 		npm run build || _exit $? "npm run build failed"
