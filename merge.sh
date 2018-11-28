@@ -34,17 +34,10 @@ build(){
 		case ${BRANCH} in
 		*_package_update)
 			echo "Doing npm install because we are running a package update ready branch"
-			echo "ls"
-			ls
-			pwd
 			npm install || _exit $? "npm install failed (_package_update branch name)"
 			git add package-lock.json || _exit $? "Could not git add package-lock.json"
 			git commit -m "update package-lock.json" --author "${lastCommitAuthor}" || _exit $? "Could not commit package-lock.json"
-			pwd
-			echo "webpack.config.client.babel.js"
-			cat webpack.config.client.babel.js
-			echo "ls"
-			ls
+			;;
 		esac
 		npm run build || _exit $? "npm run build failed"
 		remove_npm_token || _exit $? "Removing NPM_TOKEN env var from .npmrc failed"
@@ -299,6 +292,7 @@ case ${BRANCH} in
 		*) echo "Success. Pull request number passes regExp test for number. Exporting pullRequestNumber=${pullRequestNumber}" ;;
 	esac
 	pullRequestLink="<https://github.com/practio/${project}/pull/${pullRequestNumber}|PR#${pullRequestNumber}>"
+	;;
 esac
 
 #####################################################################
