@@ -233,8 +233,8 @@ echo "This will be the author of the merge commit in master: ${lastCommitAuthor}
 
 case ${BRANCH} in
 *_package_update)
-	## If the ready branch ends with "_no_pull_request" we will not try to match to a pull request. This is for merging latest texts
-	step_start "No pull request - Git fetching"
+	## If the ready branch ends with "_package_update" we will not try to match to a pull request.
+	step_start "No pull request"
 	pullRequestNumber="none"
 	pullRequestLink=""
 	;;
