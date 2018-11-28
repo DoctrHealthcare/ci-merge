@@ -246,7 +246,7 @@ case ${BRANCH} in
 	then
 		# Avoid -i flag for sed, because of platform differences
 		sed 's/\[remote \"origin\"\]/[remote "origin"]'\
-	'	fetch = +refs\/pull\/*\/head:refs\/remotes\/origin\/pullrequest\/*/g' .git/config >.git/config_with_pull_request || build_done $? "Could not sed .git/config"
+'	fetch = +refs\/pull\/*\/head:refs\/remotes\/origin\/pullrequest\/*/g' .git/config >.git/config_with_pull_request || build_done $? "Could not sed .git/config"
 		cp .git/config .git/config.backup || build_done $? "Could not copy .git/config"
 		mv .git/config_with_pull_request .git/config || build_done $? "Could not mv .git/config"
 		echo 'Added fetch of pull request to .git/config:'
