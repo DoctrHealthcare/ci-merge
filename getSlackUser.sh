@@ -24,8 +24,13 @@ then
 else
 	slackUser=$(getSlackName "${email}")
 	users=$(curl -X POST "https://slack.com/api/users.list?token=${SLACK_TOKEN}" -s)
-	slackUserId=$(node -e "let users =  ${users}; console.log(users.members.reduce((acc,m)=>{ if(m.name==='${slackUser}'||m.profile.email==='${email}'||m.profile.display_name==='${slackUser}'||m.profile.real_name==='${slackUser}'){return m.id} return acc;}, ''))")
-	slackUser=$(node -e "let users =  ${users}; console.log(users.members.reduce((acc,m)=>{ if(m.name==='${slackUser}'||m.profile.email==='${email}'||m.profile.display_name==='${slackUser}'||m.profile.real_name==='${slackUser}'){return m.name} return acc;}, ''))")
+
+	echo "let users =  ${users}; console.log(users.members.reduce((acc,m)=>{ if(m.name==='${slackUser}'||m.profile.email==='${email}'||m.profile.display_name==='${slackUser}'||m.profile.real_name==='${slackUser}'){return m.id} return acc;}, ''))" >> ci-merge-tmp.js
+	slackUserId=$(node ci-merge-tmp.js)
+	rm ci-merge-tmp.js
+	echo "let users =  ${users}; console.log(users.members.reduce((acc,m)=>{ if(m.name==='${slackUser}'||m.profile.email==='${email}'||m.profile.display_name==='${slackUser}'||m.profile.real_name==='${slackUser}'){return m.name} return acc;}, ''))" >> ci-merge-tmp.js
+	slackUser=$(node ci-merge-tmp.js)
+	rm ci-merge-tmp.js
 	if [ "${slackUserId}" = '' ]
 	then
 		echo "|${slackUserId}|${slackUser}|${email} (could not find user?! <https://github.com/practio/ci-merge/blob/master/getSlackUser.sh|Fix it here>)"
