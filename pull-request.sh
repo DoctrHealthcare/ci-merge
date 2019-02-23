@@ -161,6 +161,7 @@ then
 	echo "master branch, doing nothing"
 	exit 0
 fi
+BRANCH=${BRANCH#"pull/"} ## remove "pull/" prefix
 project=$(node -e "console.log(require('./package.json').name || '')")
 githubRemote=$(git remote -v | grep origin | grep fetch | grep github)
 githubProject=$(node -e "console.log('$githubRemote'.split(':').pop().split('.').shift())")
