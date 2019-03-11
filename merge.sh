@@ -10,17 +10,11 @@
 ################################################
 # Build
 ###############################################
-prebuild(){
-	step_start "Prebuilding"
-	prebuildscript=$(node -e "console.log(require('./package.json').scripts.prebuild || '')")
-	if [ "$prebuildscript" = '' ]
-	then
-		echo "No npm run prebuild script available"
-	else
-		add_npm_token || _exit $? "Adding NPM_TOKEN env var to .npmrc failed"
-		npm run prebuild || _exit $? "npm run prebuild failed"
-		remove_npm_token || _exit $? "Removing NPM_TOKEN env var from .npmrc failed"
-	fi
+clean_install(){
+	step_start "Clean installing"
+	add_npm_token || _exit $? "Adding NPM_TOKEN env var to .npmrc failed"
+	npm ci || _exit $? "npm ci failed - Make sure your npm version is at least v5.7.0!"
+	remove_npm_token || _exit $? "Removing NPM_TOKEN env var from .npmrc failed"
 }
 
 build(){
@@ -367,7 +361,7 @@ fi
 # Build
 ################################################
 
-prebuild
+clean_install
 build
 
 ################################################
