@@ -15,6 +15,7 @@ getSlackName(){
 	'sotirovicj@gmail.com': 'Jelena',
 	'flaviofernandes004@gmail.com': 'Flávio Fernandes',
 	'renato.filipe.vieira@gmail.com': 'Renato',
+	'diogo.sim.melo@gmail.com': 'Diogo Simões Melo',
 }['$1']||'Not found')"
 }
 
