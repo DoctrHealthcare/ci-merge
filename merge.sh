@@ -35,8 +35,8 @@ build(){
 		*_package_update)
 			echo "Doing npm install because we are running a package update ready branch"
 			npm install || _exit $? "npm install failed (_package_update branch name)"
-			git add package-lock.json || _exit $? "Could not git add package-lock.json"
-			git commit -m "update package-lock.json" --author "${lastCommitAuthor}" || _exit $? "Could not commit package-lock.json"
+			npm audit fix || _exit $? "npm audit fix failed (_package_update branch name)"
+			(git add package-lock.json && git commit -m "update package-lock.json" --author "${lastCommitAuthor}") || echo "Ignoring: Could not git add package-lock.json, maybe no changes"
 			;;
 		esac
 		npm run build || _exit $? "npm run build failed"
