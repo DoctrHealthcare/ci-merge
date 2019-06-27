@@ -303,6 +303,7 @@ esac
 
 step_start "Checking out master, resetting (hard), pulling from origin and cleaning"
 
+git fetch --prune || build_done $? "Could not git fetch"
 git checkout master || build_done $? "Could not checkout master. Try to merge master into your Pull Request-branch and solve any merge conflicts"
 git branch --set-upstream-to=origin/master master || build_done $? "Could not set upstream for master to origin/master"
 git reset --hard origin/master || build_done $? "Could not reset to master"
