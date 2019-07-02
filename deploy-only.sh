@@ -1,5 +1,6 @@
 #!/bin/bash
 #### ENV VARS NEEDED BY THIS SCRIPT
+# REPO              - The Repo on Github (set by TeamCity)
 # SLACK_TOKEN       - For posting to slack
 # SLACK_CHANNEL_ID  - For posting to slack
 # BUILD_URL         - URL to the build on TeamCity, so we can link in slack messages
@@ -16,6 +17,7 @@ deploy(){
 	then
 		_exit 0 "No npm run deploy script available"
 	else
+		node -e "if((require('./package.json').scripts.deploy || '').indexOf('git@heroku.com/${REPO}.git')===-1) process.exit(1)" || _exit $? "npm run deploy does not push to ${REPO} on Heroku"
 		npm run deploy || _exit $? "npm run deploy failed"
 	fi
 	slack "Success deploying ${slackProject} ${slackUser}
