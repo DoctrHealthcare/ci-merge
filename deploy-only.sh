@@ -25,13 +25,13 @@ ${commitMessage} - <${COMMIT_URL}${mergeCommitSha}|view commit> " green
 }
 
 add_npm_token(){
-	if [ ! -z "$NPM_TOKEN" ]; then
+	if [ -n "$NPM_TOKEN" ]; then
 		if [ -f .npmrc ]; then
 			mv .npmrc .npmrc-backup
 		fi
 		# shellcheck disable=SC2016
 		if [ -f .npmrc ]; then
-			echo '//registry.npmjs.org/:_authToken=${NPM_TOKEN}' | cat - .npmrc-backuop >  .npmrc
+			echo '//registry.npmjs.org/:_authToken=${NPM_TOKEN}' | cat - .npmrc-backup >  .npmrc
 		else
 			echo '//registry.npmjs.org/:_authToken=${NPM_TOKEN}' > .npmrc
 		fi
@@ -39,7 +39,7 @@ add_npm_token(){
 }
 
 remove_npm_token(){
-	if [ ! -z "$NPM_TOKEN" ]; then
+	if [ -n "$NPM_TOKEN" ]; then
 		rm .npmrc
 		if [ -f .npmrc-backup ]; then
     		mv .npmrc-backup .npmrc

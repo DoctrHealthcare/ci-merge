@@ -46,7 +46,7 @@ build(){
 }
 
 add_npm_token(){
-	if [ ! -z "$NPM_TOKEN" ]; then
+	if [ -n "$NPM_TOKEN" ]; then
 		if [ -f .npmrc ]; then
 			mv .npmrc .npmrc-backup
 		fi
@@ -60,7 +60,7 @@ add_npm_token(){
 }
 
 remove_npm_token(){
-	if [ ! -z "$NPM_TOKEN" ]; then
+	if [ -n "$NPM_TOKEN" ]; then
 		rm .npmrc
 		if [ -f .npmrc-backup ]; then
     		mv .npmrc-backup .npmrc
