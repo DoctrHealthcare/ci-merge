@@ -45,6 +45,13 @@ add_npm_token(){
 		else
 			echo '//registry.npmjs.org/:_authToken=${NPM_TOKEN}' > .npmrc
 		fi
+
+		# if it is a monorepo, add the .npmrc to each subdir
+		if [ -d packages ];
+			then for subdir in packages/*; do
+				cp .npmrc "$subdir"/.npmrc
+			done
+		fi
 	fi
 }
 
@@ -53,6 +60,13 @@ remove_npm_token(){
 		rm .npmrc
 		if [ -f .npmrc-backup ]; then
     		mv .npmrc-backup .npmrc
+		fi
+
+		# if it is a monorepo, remove the .npmrc from each subdir
+		if [ -d packages ];
+			then for subdir in packages/*; do
+				rm "$subdir"/.npmrc
+			done
 		fi
 	fi
 }
