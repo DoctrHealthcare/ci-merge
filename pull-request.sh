@@ -284,7 +284,7 @@ exec 5>&1
 ## after capture of stderr on stdout by tee, redirect back to stderr
 npm run teamcity 2>&1 1>&5 | tee err.log 1>&2
 
-teamcitye2escript=$(node -e "console.log(require('./package.json').scripts.teamcity:e2e || '')")
+teamcitye2escript=$(node -e "console.log(require('./package.json').scripts['teamcity:e2e'] || '')")
 if [ "$teamcitye2escript" != '' ]
 then
   npm run teamcity:e2e
