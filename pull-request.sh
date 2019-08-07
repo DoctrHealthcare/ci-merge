@@ -284,8 +284,12 @@ exec 5>&1
 ## after capture of stderr on stdout by tee, redirect back to stderr
 npm run teamcity 2>&1 1>&5 | tee err.log 1>&2
 
+echo "DEBUG!!!!!!!"
+echo "DEBUG!!!!!!!"
+
 ## get exit code of "npm run teamcity"
 code="${PIPESTATUS[0]}"
+echo "PIPE STATUS IS ${PIPESTATUS[0]}"
 err=$(node -e "
 const fs = require('fs');
 const path = require('path');
