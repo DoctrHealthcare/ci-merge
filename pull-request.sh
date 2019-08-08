@@ -315,7 +315,7 @@ if [ "$teamcitye2escript" != '' ]
 then
   trap "after_teamcity_script $?" EXIT;
   exec 5>&1
-  npm run teamcity:e2e 2>&1 1>&5 | tee err.log 1>&2
+  npm run teamcity:e2e
 fi
 
 after_teamcity_script $PIPESTATUS[0]
