@@ -171,6 +171,7 @@ after_teamcity_script(){
   ## get exit code of "npm run teamcity"
   code="$1"
   echo "PIPE STATUS IS ${PIPESTATUS[0]}"
+  echo "EXIT CODE IS $?"
   err=$(node -e "
   const fs = require('fs');
   const path = require('path');
