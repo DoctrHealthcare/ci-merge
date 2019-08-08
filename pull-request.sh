@@ -312,12 +312,4 @@ npm run teamcity 2>&1 1>&5 | tee err.log 1>&2 &
 proc=$!
 wait $proc
 
-#teamcitye2escript=$(node -e "console.log(require('./package.json').scripts['teamcity:e2e'] || '')")
-#if [ "$teamcitye2escript" != '' ]
-#then
-#  npm run teamcity:e2e &
-#  proc=$!
-#  wait $proc
-#fi
-
 after_teamcity_script ${PIPESTATUS[0]}
