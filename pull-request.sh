@@ -317,4 +317,4 @@ npm run teamcity 2>&1 1>&5 | tee err.log 1>&2
 #  npm run teamcity:e2e
 #fi
 
-after_teamcity_script $PIPESTATUS[0]
+after_teamcity_script ${PIPESTATUS[0]}
