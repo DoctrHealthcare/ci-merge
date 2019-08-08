@@ -308,14 +308,16 @@ fi
 exec 5>&1
 ## redirect stderr to stdout for capture by tee, and redirect stdout to file descriptor 5 for output on stdout (with no capture by tee)
 ## after capture of stderr on stdout by tee, redirect back to stderr
-npm run teamcity 2>&1 1>&5 | tee err.log 1>&2
+npm run teamcity 2>&1 1>&5 | tee err.log 1>&2 &
+proc=$!
+wait $proc
 
-teamcitye2escript=$(node -e "console.log(require('./package.json').scripts['teamcity:e2e'] || '')")
-if [ "$teamcitye2escript" != '' ]
-then
-  npm run teamcity:e2e &
-  proc=$!
-  wait $proc
-fi
+#teamcitye2escript=$(node -e "console.log(require('./package.json').scripts['teamcity:e2e'] || '')")
+#if [ "$teamcitye2escript" != '' ]
+#then
+#  npm run teamcity:e2e &
+#  proc=$!
+#  wait $proc
+#fi
 
 after_teamcity_script ${PIPESTATUS[0]}
