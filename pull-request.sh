@@ -313,7 +313,8 @@ teamcitye2escript=$(node -e "console.log(require('./package.json').scripts['team
 if [ "$teamcitye2escript" != '' ]
 then
   trap "after_teamcity_script" EXIT;
-  npm run teamcity:e2e
+  exec 5>&1
+  npm run teamcity:e2e 2>&1 1>&5 | tee err.log 1>&2
 fi
 
 after_teamcity_script
