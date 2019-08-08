@@ -163,6 +163,31 @@ slack(){
 	fi
 }
 
+### After teamcity script
+after_teamcity_script(){
+  echo "DEBUG!!!!!!!"
+  echo "MADE IT HERE!!!!!!!"
+
+  ## get exit code of "npm run teamcity"
+  code="${PIPESTATUS[0]}"
+  echo "PIPE STATUS IS ${PIPESTATUS[0]}"
+  err=$(node -e "
+  const fs = require('fs');
+  const path = require('path');
+  let log = fs.readFileSync(path.join(__dirname, 'err.log'), 'utf-8')
+    .split('\\n')
+    .filter(line => !/^npm (ERR|WARN)/.test(line))
+    .join('\\n')
+    .replace(/\\|n/g, '\\n');
+  console.log(log);
+  " && rm -f err.log)
+
+  if [ "${code}" != 0 ]
+  then
+    build_done "${code}" "Failing test(s)"	"${err}"
+  fi
+  build_done 0
+}
 
 
 ################################################
@@ -287,33 +312,8 @@ npm run teamcity 2>&1 1>&5 | tee err.log 1>&2
 teamcitye2escript=$(node -e "console.log(require('./package.json').scripts['teamcity:e2e'] || '')")
 if [ "$teamcitye2escript" != '' ]
 then
-  trap "echo PROCESS EXIT $?" EXIT;
-  trap "echo PROCESS KILL $?" SIGKILL;
-  trap "echo PROCESS TERM $?" SIGTERM;
-  trap "echo PROCESS INT $?" SIGINT;
-  exec 5>&1
-  npm run teamcity:e2e 2>&1 1>&5 | tee err.log 1>&2
+  trap "after_teamcity_script" EXIT;
+  npm run teamcity:e2e
 fi
 
-echo "DEBUG!!!!!!!"
-echo "MADE IT HERE!!!!!!!"
-
-## get exit code of "npm run teamcity"
-code="${PIPESTATUS[0]}"
-echo "PIPE STATUS IS ${PIPESTATUS[0]}"
-err=$(node -e "
-const fs = require('fs');
-const path = require('path');
-let log = fs.readFileSync(path.join(__dirname, 'err.log'), 'utf-8')
-	.split('\\n')
-	.filter(line => !/^npm (ERR|WARN)/.test(line))
-	.join('\\n')
-	.replace(/\\|n/g, '\\n');
-console.log(log);
-" && rm -f err.log)
-
-if [ "${code}" != 0 ]
-then
-	build_done "${code}" "Failing test(s)"	"${err}"
-fi
-build_done 0
+after_teamcity_script
