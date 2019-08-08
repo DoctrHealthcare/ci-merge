@@ -169,7 +169,7 @@ after_teamcity_script(){
   echo "MADE IT HERE!!!!!!!"
 
   ## get exit code of "npm run teamcity"
-  code="${PIPESTATUS[0]}"
+  code="$1"
   echo "PIPE STATUS IS ${PIPESTATUS[0]}"
   err=$(node -e "
   const fs = require('fs');
@@ -312,9 +312,9 @@ npm run teamcity 2>&1 1>&5 | tee err.log 1>&2
 teamcitye2escript=$(node -e "console.log(require('./package.json').scripts['teamcity:e2e'] || '')")
 if [ "$teamcitye2escript" != '' ]
 then
-  trap "after_teamcity_script" EXIT;
+  trap "after_teamcity_script $?" EXIT;
   exec 5>&1
   npm run teamcity:e2e 2>&1 1>&5 | tee err.log 1>&2
 fi
 
-after_teamcity_script
+after_teamcity_script $PIPESTATUS[0]
