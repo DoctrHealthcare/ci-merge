@@ -209,6 +209,26 @@ slack(){
 	fi
 }
 
+### After teamcity script
+after_teamcity_script(){
+  code="$1"
+  err=$(node -e "
+  const fs = require('fs');
+  const path = require('path');
+  let log = fs.readFileSync(path.join(__dirname, 'err.log'), 'utf-8')
+    .split('\\n')
+    .filter(line => !/^npm (ERR|WARN)/.test(line))
+    .join('\\n')
+    .replace(/\\|n/g, '\\n');
+  console.log(log);
+  " && rm -f err.log)
+
+  if [ "${code}" != 0 ]
+  then
+    build_done "${code}" "Failing test(s)"	"${err}"
+  fi
+}
+
 
 
 ################################################
@@ -404,24 +424,24 @@ exec 5>&1
 ## redirect stderr to stdout for capture by tee, and redirect stdout to file descriptor 5 for output on stdout (with no capture by tee)
 ## after capture of stderr on stdout by tee, redirect back to stderr
 npm run teamcity 2>&1 1>&5 | tee err.log 1>&2
+exit_code=${PIPESTATUS[0]}
 
-## get exit code of "npm run teamcity"
-code="${PIPESTATUS[0]}"
-err=$(node -e "
-const fs = require('fs');
-const path = require('path');
-let log = fs.readFileSync(path.join(__dirname, 'err.log'), 'utf-8')
-	.split('\\n')
-	.filter(line => !/^npm (ERR|WARN)/.test(line))
-	.join('\\n')
-	.replace(/\\|n/g, '\\n');
-console.log(log);
-" && rm -f err.log)
-
-if [ "${code}" != 0 ]
+## Executes e2e tests
+## In the end the server process gets killed
+## which causes this main process to die too
+## To avoid that, we run e2e tests in a different process
+## and wait for it to finish
+teamcity_e2e_script=$(node -e "console.log(require('./package.json').scripts['teamcity:e2e'] || '')")
+if [ "$exit_code" == "0" ] && [ "$teamcity_e2e_script" != '' ]
 then
-	build_done "${code}" "Failing test(s)"	"${err}"
+  npm run teamcity:e2e &
+  proc=$!
+  wait $proc
+  exit_code=${PIPESTATUS[0]}
 fi
+
+after_teamcity_script $exit_code
+
 
 ################################################
 # Push changes to github
