@@ -165,13 +165,8 @@ slack(){
 
 ### After teamcity script
 after_teamcity_script(){
-  echo "DEBUG!!!!!!!"
-  echo "MADE IT HERE!!!!!!!"
-
   ## get exit code of "npm run teamcity"
   code="$1"
-  echo "PIPE STATUS IS ${PIPESTATUS[0]}"
-  echo "EXIT CODE IS ${code}"
   err=$(node -e "
   const fs = require('fs');
   const path = require('path');
