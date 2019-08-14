@@ -320,4 +320,4 @@ then
   exit_code=${PIPESTATUS[0]}
 fi
 
-after_teamcity_script $exit_code
+after_teamcity_script "$exit_code"
