@@ -7,23 +7,24 @@
 # BUILD_URL         - URL to the build on TeamCity, so we can link in slack messages
 # COMMIT_URL        - URL to the commit on GitHub. This script will add the commit SHA
 
+################################################
+# Code formatting
+###############################################
+format(){
+	step_start "Formatting code"
+	formatscript=$(node -e "console.log(require('./package.json').scripts.format || '')")
+	if [ "$formatscript" = '' ]
+	then
+		echo "No npm run format script available"
+	else
+		npm run format || _exit $? "npm run format failed"
+		(git add . && git commit -m "format code" --author "${lastCommitAuthor}") || echo "Ignoring: Could not git add changes after formatting, maybe no changes"
+	fi
+}
 
 ################################################
 # Build
 ###############################################
-prebuild(){
-	step_start "Prebuilding"
-	prebuildscript=$(node -e "console.log(require('./package.json').scripts.prebuild || '')")
-	if [ "$prebuildscript" = '' ]
-	then
-		echo "No npm run prebuild script available"
-	else
-		add_npm_token || _exit $? "Adding NPM_TOKEN env var to .npmrc failed"
-		npm run prebuild || _exit $? "npm run prebuild failed"
-		remove_npm_token || _exit $? "Removing NPM_TOKEN env var from .npmrc failed"
-	fi
-}
-
 build(){
 	step_start "Building"
 	buildscript=$(node -e "console.log(require('./package.json').scripts.build || '')")
@@ -401,10 +402,15 @@ then
 fi
 
 ################################################
+# Format code
+################################################
+
+format
+
+################################################
 # Build
 ################################################
 
-prebuild
 build
 
 ################################################
