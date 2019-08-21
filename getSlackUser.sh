@@ -18,6 +18,7 @@ getSlackName(){
 	'diogo.sim.melo@gmail.com': 'Diogo Simões Melo',
 	'negrei.ruslan@gmail.com': 'Ruslan Negrei',
 	'nativix21@gmail.com': 'Nati Lara',
+	'cossou@users.noreply.github.com', 'Hélder Duarte',
 }['$1']||'Not found')"
 }
 
