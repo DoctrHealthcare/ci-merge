@@ -9,11 +9,9 @@
 getSlackName(){
 	 node -e "console.log({
 	'allan@878.dk': 'ebdrup',
-	'36155117+lopes-d@users.noreply.github.com': 'dl',
 	'nunodelisboa@gmail.com': 'nuno',
 	'mhcservenka@gmail.com': 'martincservenka',
 	'sotirovicj@gmail.com': 'Jelena',
-	'flaviofernandes004@gmail.com': 'Flávio Fernandes',
 	'renato.filipe.vieira@gmail.com': 'Renato',
 	'diogo.sim.melo@gmail.com': 'Diogo Simões Melo',
 	'negrei.ruslan@gmail.com': 'Ruslan Negrei',
