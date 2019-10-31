@@ -6,6 +6,22 @@
 # BUILD_URL         - URL to the build on TeamCity, so we can link in slack messages
 
 ################################################
+# Install dependencies
+###############################################
+teamcityinstall(){
+	step_start "Installing dependencies"
+	teamcityinstallscript=$(node -e "console.log(require('./package.json').scripts.teamcity-install || '')")
+	if [ "$teamcityinstallscript" = '' ]
+	then
+		echo "No npm teamcity-install script available"
+	else
+		add_npm_token || _exit $? "Adding NPM_TOKEN env var to .npmrc failed"
+		npm run teamcity-install || _exit $? "npm run teamcity-install failed"
+		remove_npm_token || _exit $? "Removing NPM_TOKEN env var from .npmrc failed"
+	fi
+}
+
+################################################
 # Build
 ###############################################
 prebuild(){
@@ -280,6 +296,12 @@ then
 	step_start "Changing npm v${npmCurrent}->v${npmSpecified}"
 	sudo npm install -g "npm@${npmSpecified}" || build_done 1 "Could not install npm version ${npmSpecified}. Changing from current npm version ${npmCurrent}"
 fi
+
+################################################
+# Install dependencies
+################################################
+
+teamcityinstall
 
 ################################################
 # Build
