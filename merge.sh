@@ -12,7 +12,7 @@
 ###############################################
 teamcityinstall(){
 	step_start "Installing dependencies"
-	teamcityinstallscript=$(node -e "console.log(require('./package.json').scripts.teamcity-install || '')")
+	teamcityinstallscript=$(node -e "console.log(require('./package.json').scripts['teamcity-install'] || '')")
 	if [ "$teamcityinstallscript" = '' ]
 	then
 		echo "No npm teamcity-install script available"
