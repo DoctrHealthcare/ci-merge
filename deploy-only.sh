@@ -24,69 +24,6 @@ deploy(){
 ${commitMessage} - <${COMMIT_URL}${mergeCommitSha}|view commit> " green
 }
 
-add_npm_token(){
-	if [ -n "$NPM_TOKEN" ]; then
-		if [ -f .npmrc ]; then
-			mv .npmrc .npmrc-backup
-		fi
-		# shellcheck disable=SC2016
-		if [ -f .npmrc ]; then
-			echo '//registry.npmjs.org/:_authToken=${NPM_TOKEN}' | cat - .npmrc-backup >  .npmrc
-		else
-			echo '//registry.npmjs.org/:_authToken=${NPM_TOKEN}' > .npmrc
-		fi
-
-		# if it is a monorepo, add the .npmrc to each subdir
-		if [ -d packages ];
-			then for subdir in packages/*; do
-				cp .npmrc "$subdir"/.npmrc
-			done
-		fi
-	fi
-}
-
-remove_npm_token(){
-	if [ -n "$NPM_TOKEN" ]; then
-		rm .npmrc
-		if [ -f .npmrc-backup ]; then
-    		mv .npmrc-backup .npmrc
-		fi
-
-		# if it is a monorepo, remove the .npmrc from each subdir
-		if [ -d packages ];
-			then for subdir in packages/*; do
-				rm "$subdir"/.npmrc
-			done
-		fi
-	fi
-}
-
-prebuild(){
-	step_start "Prebuilding"
-	prebuildscript=$(node -e "console.log(require('./package.json').scripts.prebuild || '')")
-	if [ "$prebuildscript" = '' ]
-	then
-		echo "No npm run prebuild script available"
-	else
-		add_npm_token || _exit $? "Adding NPM_TOKEN env var to .npmrc failed"
-		npm run prebuild || _exit $? "npm run prebuild failed"
-		remove_npm_token || _exit $? "Removing NPM_TOKEN env var from .npmrc failed"
-	fi
-}
-
-build(){
-	step_start "Building"
-	buildscript=$(node -e "console.log(require('./package.json').scripts.build || '')")
-	if [ "$buildscript" = '' ]
-	then
-		echo "No npm run build script available"
-	else
-		add_npm_token || _exit $? "Adding NPM_TOKEN env var to .npmrc failed"
-		npm run build || _exit $? "npm run build failed"
-		remove_npm_token || _exit $? "Removing NPM_TOKEN env var from .npmrc failed"
-	fi
-}
-
 _exit (){
 	step_end
 	if [ "$1" = '0' ]
@@ -197,7 +134,5 @@ else
 	echo "Master has no tag yet, lets deploy (return value when getting tag: ${returnValueWhenGettingTag})"
 fi
 
-prebuild
-build
 deploy
 _exit 0
