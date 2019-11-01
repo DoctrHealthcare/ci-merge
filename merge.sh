@@ -47,7 +47,7 @@ package_update(){
 		add_npm_token || _exit $? "Adding NPM_TOKEN env var to .npmrc failed"
 		echo "Doing npm install because we are running a package update ready branch"
 		npm install || _exit $? "npm install failed (_package_update branch name)"
-		npm audit fix || _exit $? "npm audit fix failed (_package_update branch name)"
+		npm audit fix --package-lock-only || _exit $? "npm audit fix failed (_package_update branch name)"
 		(git add package-lock.json && git commit -m "update package-lock.json" --author "${lastCommitAuthor}") || echo "Ignoring: Could not git add package-lock.json, maybe no changes"
 		remove_npm_token || _exit $? "Removing NPM_TOKEN env var from .npmrc failed"
 		;;
