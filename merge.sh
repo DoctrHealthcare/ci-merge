@@ -426,7 +426,7 @@ then
 fi
 
 ################################################
-# Package update (If it is a _package_update branch)
+# Package update (If it is a *_package_update branch)
 ################################################
 
 package_update
