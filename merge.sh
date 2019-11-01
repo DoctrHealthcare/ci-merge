@@ -39,6 +39,22 @@ format(){
 }
 
 ################################################
+# Package Update
+###############################################
+package_update(){
+	case ${BRANCH} in
+	*_package_update)
+		add_npm_token || _exit $? "Adding NPM_TOKEN env var to .npmrc failed"
+		echo "Doing npm install because we are running a package update ready branch"
+		npm install || _exit $? "npm install failed (_package_update branch name)"
+		npm audit fix --package-lock-only || _exit $? "npm audit fix failed (_package_update branch name)"
+		(git add package-lock.json && git commit -m "update package-lock.json" --author "${lastCommitAuthor}") || echo "Ignoring: Could not git add package-lock.json, maybe no changes"
+		remove_npm_token || _exit $? "Removing NPM_TOKEN env var from .npmrc failed"
+		;;
+	esac
+}
+
+################################################
 # Build
 ###############################################
 build(){
@@ -49,14 +65,6 @@ build(){
 		echo "No npm run build script available"
 	else
 		add_npm_token || _exit $? "Adding NPM_TOKEN env var to .npmrc failed"
-		case ${BRANCH} in
-		*_package_update)
-			echo "Doing npm install because we are running a package update ready branch"
-			npm install || _exit $? "npm install failed (_package_update branch name)"
-			npm audit fix || _exit $? "npm audit fix failed (_package_update branch name)"
-			(git add package-lock.json && git commit -m "update package-lock.json" --author "${lastCommitAuthor}") || echo "Ignoring: Could not git add package-lock.json, maybe no changes"
-			;;
-		esac
 		npm run build || _exit $? "npm run build failed"
 		remove_npm_token || _exit $? "Removing NPM_TOKEN env var from .npmrc failed"
 	fi
@@ -416,6 +424,12 @@ then
 	step_start "Changing npm v${npmCurrent}->v${npmSpecified}"
 	sudo npm install -g "npm@${npmSpecified}" || build_done 1 "Could not install npm version ${npmSpecified}. Changing from current npm version ${npmCurrent}"
 fi
+
+################################################
+# Package update (If it is a *_package_update branch)
+################################################
+
+package_update
 
 ################################################
 # Install dependencies
