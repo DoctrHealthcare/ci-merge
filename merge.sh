@@ -119,7 +119,7 @@ deploy(){
 	then
 		_exit 0 "No npm run deploy script available"
 	else
-		node -e "if((require('./package.json').scripts.deploy || '').indexOf('git@heroku.com/${REPO}.git')===-1 && '${REPO}' !== 'vaccination' && '${REPO}' !== 'email-generator') process.exit(1)" || _exit $? "npm run deploy does not push to ${REPO} on Heroku"
+		node -e "if((require('./package.json').scripts.deploy || '').indexOf('git@heroku.com/${REPO}.git')===-1 && '${REPO}' !== 'vaccination' && '${REPO}' !== 'email-generator' && '${REPO}' !== 'practio-type-1-booking') process.exit(1)" || _exit $? "npm run deploy does not push to ${REPO} on Heroku"
 		npm run deploy || _exit $? "npm run deploy failed"
 	fi
 	slack "Success deploying ${slackProject} ${slackUser} ${pullRequestLink}
