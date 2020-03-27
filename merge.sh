@@ -8,6 +8,32 @@
 # COMMIT_URL        - URL to the commit on GitHub. This script will add the commit SHA
 
 ################################################
+# retry
+###############################################
+function retry()
+{
+    local n=0
+    local try=$1
+    local cmd="${*: 2}"
+    [[ $# -le 1 ]] && {
+    echo "Usage $0 <retry_number> <Command>"; }
+
+    until [[ $n -ge $try ]]
+    do
+        # shellcheck disable=SC2015
+        ($cmd) && return 0 || {
+            echo "Command failed: $cmd"
+            ((n++))
+            echo "Will retry in $n seconds..."
+            sleep $n;
+            echo "Retry #$n ..."
+            }
+
+    done
+    return 1
+}
+
+################################################
 # Install dependencies
 ###############################################
 teamcityinstall(){
@@ -120,7 +146,7 @@ deploy(){
 		_exit 0 "No npm run deploy script available"
 	else
 		node -e "if((require('./package.json').scripts.deploy || '').indexOf('git@heroku.com/${REPO}.git')===-1 && '${REPO}' !== 'vaccination' && '${REPO}' !== 'email-generator' && '${REPO}' !== 'practio-type-1-booking') process.exit(1)" || _exit $? "npm run deploy does not push to ${REPO} on Heroku"
-		npm run deploy || _exit $? "npm run deploy failed"
+		(retry 2 npm run deploy) || _exit $? "npm run deploy failed"
 	fi
 	slack "Success deploying ${slackProject} ${slackUser} ${pullRequestLink}
 ${commitMessage} - <${COMMIT_URL}${mergeCommitSha}|view commit> - <${BUILD_URL}|view build log>" green
@@ -134,7 +160,7 @@ ${commitMessage} - <${COMMIT_URL}${mergeCommitSha}|view commit> - <${BUILD_URL}|
 	git config user.name "Teamcity" || _exit $? "Could not set git user.name"
 	datetime=$(date +%Y-%m-%d_%H-%M-%S)
 	git tag -a "${project}.production.${datetime}" -m "${commitMessage}" || _exit $? "Could not create git tag"
-	git push origin --tags || _exit $? "Could not push git tag to GitHub"
+	(retry 2 git push origin --tags) || _exit $? "Could not push git tag to GitHub"
 }
 
 ################################################
@@ -143,7 +169,7 @@ ${commitMessage} - <${COMMIT_URL}${mergeCommitSha}|view commit> - <${BUILD_URL}|
 ################################################
 build_done (){
 	step_start "Deleting ready branch on github"
-	git push origin ":ready/${BRANCH}"
+	(retry 2 git push origin ":ready/${BRANCH}")
 	step_start "Post to slack"
 	if [ "$1" = '0' ]
 	then
@@ -316,7 +342,7 @@ case ${BRANCH} in
 	else
 		echo 'Fetch of pull request already in place in .git/config'
 	fi
-	git fetch --prune || build_done $? "Could not git fetch"
+	(retry 2 git fetch --prune) || build_done $? "Could not git fetch"
 
 	########################################################################################
 	# Lookup PR number
@@ -364,11 +390,11 @@ esac
 
 step_start "Checking out master, resetting (hard), pulling from origin and cleaning"
 
-git fetch --prune || build_done $? "Could not git fetch"
+(retry 2 git fetch --prune) || build_done $? "Could not git fetch"
 git checkout master || build_done $? "Could not checkout master. Try to merge master into your Pull Request-branch and solve any merge conflicts"
 git branch --set-upstream-to=origin/master master || build_done $? "Could not set upstream for master to origin/master"
 git reset --hard origin/master || build_done $? "Could not reset to master"
-git pull || build_done $? "Could not pull master"
+(retry 2 git pull) || build_done $? "Could not pull master"
 git clean -fx || build_done $? "Could not git clean on master"
 
 

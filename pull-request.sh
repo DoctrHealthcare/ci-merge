@@ -6,6 +6,32 @@
 # BUILD_URL         - URL to the build on TeamCity, so we can link in slack messages
 
 ################################################
+# retry
+###############################################
+function retry()
+{
+    local n=0
+    local try=$1
+    local cmd="${*: 2}"
+    [[ $# -le 1 ]] && {
+    echo "Usage $0 <retry_number> <Command>"; }
+
+    until [[ $n -ge $try ]]
+    do
+        # shellcheck disable=SC2015
+        ($cmd) && return 0 || {
+            echo "Command failed: $cmd"
+            ((n++))
+            echo "Will retry in $n seconds..."
+            sleep $n;
+            echo "Retry #$n ..."
+            }
+
+    done
+    return 1
+}
+
+################################################
 # Install dependencies
 ###############################################
 teamcityinstall(){
@@ -244,7 +270,7 @@ then
 else
 	echo 'Fetch of pull request already in place in .git/config'
 fi
-git fetch --prune || build_done $? "Could not git fetch"
+(retry 2 git fetch --prune) || build_done $? "Could not git fetch"
 
 #####################################################################
 # Checkout master
@@ -257,7 +283,7 @@ step_start "Checking out master, resetting (hard), pulling from origin and clean
 git checkout master || build_done $? "Could not checkout master. Try to merge master into your Pull Request-branch and solve any merge conflicts"
 git branch --set-upstream-to=origin/master master || build_done $? "Could not set upstream for master to origin/master"
 git reset --hard origin/master || build_done $? "Could not reset to master"
-git pull || build_done $? "Could not pull master"
+(retry 2 git pull) || build_done $? "Could not pull master"
 git clean -fx || build_done $? "Could not git clean on master"
 
 

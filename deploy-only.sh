@@ -7,6 +7,32 @@
 # COMMIT_URL        - URL to the commit on GitHub. This script will add the commit SHA
 
 ################################################
+# retry
+###############################################
+function retry()
+{
+    local n=0
+    local try=$1
+    local cmd="${*: 2}"
+    [[ $# -le 1 ]] && {
+    echo "Usage $0 <retry_number> <Command>"; }
+
+    until [[ $n -ge $try ]]
+    do
+        # shellcheck disable=SC2015
+        ($cmd) && return 0 || {
+            echo "Command failed: $cmd"
+            ((n++))
+            echo "Will retry in $n seconds..."
+            sleep $n;
+            echo "Retry #$n ..."
+            }
+
+    done
+    return 1
+}
+
+################################################
 # Deploy to production
 ###############################################
 deploy(){
@@ -18,7 +44,7 @@ deploy(){
 		_exit 0 "No npm run deploy script available"
 	else
 		node -e "if((require('./package.json').scripts.deploy || '').indexOf('git@heroku.com/${REPO}.git')===-1 && '${REPO}' !== 'vaccination') process.exit(1)" || _exit $? "npm run deploy does not push to ${REPO} on Heroku"
-		npm run deploy || _exit $? "npm run deploy failed"
+		(retry 2 npm run deploy) || _exit $? "npm run deploy failed"
 	fi
 	slack "Success deploying ${slackProject} ${slackUser}
 ${commitMessage} - <${COMMIT_URL}${mergeCommitSha}|view commit> " green
@@ -124,7 +150,7 @@ fi
 ################################################
 
 step_start "Checking that latest commit has no tag. If it has a tag it is already deployed"
-git fetch --tags || _exit $? "Can not fet git tags"
+(retry 2 git fetch --tags) || _exit $? "Can not fet git tags"
 returnValueWhenGettingTag=$(git describe --exact-match --abbrev=0 2>&1 >/dev/null; echo $?)
 if [ "$returnValueWhenGettingTag" = '0' ]
 then
