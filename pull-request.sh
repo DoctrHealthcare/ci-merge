@@ -225,6 +225,7 @@ after_teamcity_script(){
     build_done "${code}" "Failing test(s)"	"${err}"
   fi
   lastCommitAuthor=$(git log --pretty=format:'%an' -n 1)
+  echo "Last commit author: ${lastCommitAuthor}"
   if echo "$lastCommitAuthor" | grep -q "dependabot"; then
     step_start "Automatic deployment of PR from dependabot"
 	currentSha=$(git log -1 --format="%H")
