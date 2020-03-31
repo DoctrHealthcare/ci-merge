@@ -169,7 +169,7 @@ ${commitMessage} - <${COMMIT_URL}${mergeCommitSha}|view commit> - <${BUILD_URL}|
 ################################################
 build_done (){
 	step_start "Deleting ready branch on github"
-	(retry 2 git push origin ":ready/${BRANCH}")
+	(retry 2 git push origin ":${BRANCH}")
 	step_start "Post to slack"
 	if [ "$1" = '0' ]
 	then
