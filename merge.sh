@@ -294,6 +294,7 @@ then
 	exit 0
 fi
 
+BRANCH="${CIRCLE_BRANCH}"
 pullRequestLink=""
 project=$(node -e "console.log(require('./package.json').name || '')")
 githubRemote=$(git remote -v | grep origin | grep fetch | grep github)
