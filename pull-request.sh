@@ -243,12 +243,14 @@ after_teamcity_script(){
 ################################################
 #npmpath=$(which npm)
 #alias npm="node --max_old_space_size=8000 ${npmpath}"
+BRANCH=${CIRCLE_BRANCH} ## remove "pull/" prefix
+
 if [ "$BRANCH" = 'refs/heads/master' ]
 then
 	echo "master branch, doing nothing"
 	exit 0
 fi
-BRANCH=${BRANCH#"pull/"} ## remove "pull/" prefix
+BUILD_URL=${CIRCLE_BUILD_URL}
 project=$(node -e "console.log(require('./package.json').name || '')")
 githubRemote=$(git remote -v | grep origin | grep fetch | grep github)
 githubProject=$(node -e "console.log('$githubRemote'.split(':').pop().split('.').shift())")
