@@ -223,7 +223,7 @@ ${commitMessage} - <${BUILD_URL}|view build log> " red
 ################################################
 stepName=""
 step_end(){
-	echo "##teamcity[blockClosed name='${stepName}']"
+	echo "Finished step: '${stepName}'"
 }
 step_start(){
 	if [ "${stepName}" != '' ]
@@ -231,7 +231,7 @@ step_start(){
 		step_end
 	fi
 	stepName=$(echo "-- $1 --")
-	echo "##teamcity[blockOpened name='${stepName}']"
+	echo "Started step: '${stepName}'"
 }
 
 ################################################
@@ -479,12 +479,12 @@ format
 # Run tests, and capture output to stderr
 ################################################
 
-step_start "Running tests with >npm run teamcity "
+step_start "Running tests with >npm run test "
 
-teamcityscript=$(node -e "console.log(require('./package.json').scripts.teamcity || '')")
+teamcityscript=$(node -e "console.log(require('./package.json').scripts.test || '')")
 if [ "$teamcityscript" = '' ]
 then
-	build_done 1 "No 'teamcity' script in package.json"
+	build_done 1 "No 'test' script in package.json"
 fi
 
 ## file descriptor 5 is stdout
@@ -499,7 +499,7 @@ exit_code=${PIPESTATUS[0]}
 ## which causes this main process to die too
 ## To avoid that, we run e2e tests in a different process
 ## and wait for it to finish
-teamcity_e2e_script=$(node -e "console.log(require('./package.json').scripts['teamcity:e2e'] || '')")
+teamcity_e2e_script=$(node -e "console.log(require('./package.json').scripts['test:e2e'] || '')")
 if [ "$exit_code" == "0" ] && [ "$teamcity_e2e_script" != '' ]
 then
   npm run teamcity:e2e &
