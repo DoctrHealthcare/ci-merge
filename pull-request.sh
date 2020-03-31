@@ -168,7 +168,7 @@ _exit (){
 ################################################
 stepName=""
 step_end(){
-	echo "Started: ${stepName}"
+	echo "Finished: ${stepName}"
 }
 step_start(){
 	if [ "${stepName}" != '' ]
@@ -176,7 +176,7 @@ step_start(){
 		step_end
 	fi
 	stepName=$(echo "-- $1 --")
-	echo "Finished: ${stepName}"
+	echo "Started: ${stepName}"
 }
 
 ################################################
@@ -254,7 +254,7 @@ project=$(node -e "console.log(require('./package.json').name || '')")
 githubRemote=$(git remote -v | grep origin | grep fetch | grep github)
 githubProject=$(node -e "console.log('$githubRemote'.split(':').pop().split('.').shift())")
 slackProject="<https://github.com/${githubProject}|${project}>"
-slackPR="<${CIRCLE_PR_NUMBER}}|PR:${BRANCH}>"
+slackPR="<${CIRCLE_PR_NUMBER}|PR:${BRANCH}>"
 slackUser=$(curl -sS -L 'https://raw.githubusercontent.com/practio/ci-merge/master/getSlackUser.sh' | bash)
 git config user.email "build@practio.com" || build_done $? "Could not set git email"
 git config user.name "Teamcity" || build_done $? "Could not set git user name"
