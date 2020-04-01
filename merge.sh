@@ -517,6 +517,6 @@ after_teamcity_script "$exit_code"
 
 step_start "Pushing changes to github master branch"
 
-git push origin master || build_done $? "Could not push changes to GitHub"
+(retry 2 git push origin master) || build_done $? "Could not push changes to GitHub"
 
 build_done 0
