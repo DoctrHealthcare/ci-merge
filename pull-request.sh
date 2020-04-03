@@ -224,16 +224,6 @@ after_teamcity_script(){
   then
     build_done "${code}" "Failing test(s)"	"${err}"
   fi
-  lastCommitAuthor=$(git log --pretty=format:'%an' -n 1)
-  echo "Last commit author: ${lastCommitAuthor}"
-  if echo "$lastCommitAuthor" | grep -q "dependabot"; then
-    step_start "Automatic deployment of PR from dependabot"
-	currentSha=$(git log -1 --format="%H")
-	commitMessage=$(git log --oneline --format=%B -n 1 HEAD | head -n 1)
-	readyBranchName=${commitMessage// /_}
-	epoc=$(date +%s)
-	(retry 2 git push origin "${currentSha}:refs/heads/ready/dependabot_update_${readyBranchName}/${epoc}s")
-  fi
   build_done 0
 }
 
