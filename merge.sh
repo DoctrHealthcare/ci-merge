@@ -72,6 +72,7 @@ package_update(){
 	*_package_update)
 		add_npm_token || _exit $? "Adding NPM_TOKEN env var to .npmrc failed"
 		echo "Doing npm install because we are running a package update ready branch"
+		rm -f package-lock.json || _exit $? "could not remove package-lock.json (_package_update)"
 		rm -rf node_modules || _exit $? "could not remove node_modules (_package_update)"
 		(retry 2 npm install) || _exit $? "npm install failed (_package_update)"
 		(retry 4 npm audit fix --package-lock-only) || _exit $? "npm audit fix failed (_package_update)"
