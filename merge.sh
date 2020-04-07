@@ -141,6 +141,7 @@ deploy(){
 	commitMessage=$(git log -1 --pretty=%B)
 	lastCommitAuthor=$(git log --pretty=format:'%an' -n 1)
 	deployscript=$(node -e "console.log(require('./package.json').scripts.deploy || '')")
+	REPO=${CIRCLE_PROJECT_REPONAME}
 	if [ "$deployscript" = '' ]
 	then
 		_exit 0 "No npm run deploy script available"

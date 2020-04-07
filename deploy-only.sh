@@ -39,6 +39,7 @@ deploy(){
 	step_start "Deploying to production"
 	commitMessage=$(git log -1 --pretty=%B)
 	deployscript=$(node -e "console.log(require('./package.json').scripts.deploy || '')")
+	REPO=${CIRCLE_PROJECT_REPONAME}
 	if [ "$deployscript" = '' ]
 	then
 		_exit 0 "No npm run deploy script available"
