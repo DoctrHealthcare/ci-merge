@@ -435,8 +435,8 @@ nodeCurrent=$(node --version | sed -e 's/v//g')
 if [ "${nodeSpecified}" != "${nodeCurrent}" ]
 then
 	step_start "Changing node.js v${nodeCurrent}->v${nodeSpecified}"
-	sudo npm install -g n || build_done 1 "Could not install n module to change node version from ${nodeCurrent} to ${nodeSpecified}"
-	sudo n "${nodeSpecified}" || build_done 1 "n module failed to change node version from ${nodeCurrent} to ${nodeSpecified}"
+	npm install -g n || build_done 1 "Could not install n module to change node version from ${nodeCurrent} to ${nodeSpecified}"
+	n "${nodeSpecified}" || build_done 1 "n module failed to change node version from ${nodeCurrent} to ${nodeSpecified}"
 	echo "Running node.js:"
 	node --version
 fi
@@ -449,7 +449,7 @@ npmCurrent=$(npm --version)
 if [ "${npmSpecified}" != "${npmCurrent}" ]
 then
 	step_start "Changing npm v${npmCurrent}->v${npmSpecified}"
-	sudo npm install -g "npm@${npmSpecified}" || build_done 1 "Could not install npm version ${npmSpecified}. Changing from current npm version ${npmCurrent}"
+	npm install -g "npm@${npmSpecified}" || build_done 1 "Could not install npm version ${npmSpecified}. Changing from current npm version ${npmCurrent}"
 fi
 
 ################################################
