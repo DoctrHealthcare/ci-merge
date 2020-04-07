@@ -68,7 +68,7 @@ ${commitMessage} - <${BUILD_URL}|view build log> " red
 ################################################
 stepName=""
 step_end(){
-	echo "##teamcity[blockClosed name='${stepName}']"
+	echo "Finished step: '${stepName}'"
 }
 step_start(){
 	if [ "${stepName}" != '' ]
@@ -76,7 +76,7 @@ step_start(){
 		step_end
 	fi
 	stepName=$(echo "-- $1 --")
-	echo "##teamcity[blockOpened name='${stepName}']"
+	echo "Started step: '${stepName}'"
 }
 
 ################################################
