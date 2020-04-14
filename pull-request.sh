@@ -248,13 +248,14 @@ then
 	echo "master branch, doing nothing"
 	exit 0
 fi
-BRANCH=${CI_PULL_REQUEST#"pull/"} ## remove "pull/" prefix
+BRANCH=${CIRCLE_BRANCH}
+PR_NUMBER=${CI_PULL_REQUEST#"pull/"} ## remove "pull/" prefix
 BUILD_URL=${CIRCLE_BUILD_URL}
 project=$(node -e "console.log(require('./package.json').name || '')")
 githubRemote=$(git remote -v | grep origin | grep fetch | grep github)
 githubProject=$(node -e "console.log('$githubRemote'.split(':').pop().split('.').shift())")
 slackProject="<https://github.com/${githubProject}|${project}>"
-slackPR="<https://github.com/${githubProject}/pull/${BRANCH}|PR#${BRANCH}>"
+slackPR="<https://github.com/${githubProject}/pull/${PR_NUMBER}|PR#${PR_NUMBER}>"
 slackUser=$(curl -sS -L 'https://raw.githubusercontent.com/practio/ci-merge/master/getSlackUser.sh' | bash)
 git config user.email "build@practio.com" || build_done $? "Could not set git email"
 git config user.name "Teamcity" || build_done $? "Could not set git user name"
