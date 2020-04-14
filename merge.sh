@@ -170,7 +170,7 @@ ${commitMessage} - <${COMMIT_URL}${mergeCommitSha}|view commit> - <${BUILD_URL}|
 ################################################
 build_done (){
 	step_start "Deleting ready branch on github"
-	(retry 2 git push origin ":${BRANCH}")
+	(retry 2 git push origin ":ready/${BRANCH}")
 	step_start "Post to slack"
 	if [ "$1" = '0' ]
 	then
@@ -295,7 +295,7 @@ then
 	exit 0
 fi
 
-BRANCH="${CIRCLE_BRANCH}"
+BRANCH=${CIRCLE_BRANCH#"ready/"}
 BUILD_URL="${CIRCLE_BUILD_URL}"
 pullRequestLink=""
 project=$(node -e "console.log(require('./package.json').name || '')")
