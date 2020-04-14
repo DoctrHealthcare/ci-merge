@@ -110,10 +110,10 @@ slack(){
 ################################################
 #npmpath=$(which npm)
 #alias npm="node --max_old_space_size=8000 ${npmpath}"
-
 project=$(node -e "console.log(require('./package.json').name || '')")
 githubRemote=$(git remote -v | grep origin | grep fetch | grep github)
 githubProject=$(node -e "console.log('$githubRemote'.split(':').pop().split('.').shift())")
+COMMIT_URL="https://github.com/${githubProject}/commit/"
 slackProject="<https://github.com/${githubProject}|${project}>"
 slackUser=$(curl -sS -L 'https://raw.githubusercontent.com/practio/ci-merge/master/getSlackUser.sh' | bash)
 mergeCommitSha=$(git log -1 --format="%H")
