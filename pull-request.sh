@@ -249,11 +249,11 @@ then
 	exit 0
 fi
 BRANCH=${CIRCLE_BRANCH}
-PR_NUMBER=${CI_PULL_REQUEST#"pull/"} ## remove "pull/" prefix
 BUILD_URL=${CIRCLE_BUILD_URL}
 project=$(node -e "console.log(require('./package.json').name || '')")
 githubRemote=$(git remote -v | grep origin | grep fetch | grep github)
 githubProject=$(node -e "console.log('$githubRemote'.split(':').pop().split('.').shift())")
+PR_NUMBER=${CI_PULL_REQUEST#"https://github.com/${githubProject}/pull/"} ## remove "pull/" prefix
 slackProject="<https://github.com/${githubProject}|${project}>"
 slackPR="<https://github.com/${githubProject}/pull/${PR_NUMBER}|PR#${PR_NUMBER}>"
 slackUser=$(curl -sS -L 'https://raw.githubusercontent.com/practio/ci-merge/master/getSlackUser.sh' | bash)
