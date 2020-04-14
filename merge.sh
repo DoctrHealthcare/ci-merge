@@ -415,7 +415,7 @@ message_on_commit_error(){
 	build_done 0 "No changes in ready build"
 }
 
-git merge --squash "${BRANCH}" || build_done $? "Merge conflicts (could not merge)"
+git merge --squash "ready/${BRANCH}" || build_done $? "Merge conflicts (could not merge)"
 branchWithUnderscore2SpacesAndRemovedTimestamp=$(echo "${BRANCH}" | sed -e 's/_/ /g' | sed -e 's/\/[0-9]*s$//g')
 if [ "$pullRequestNumber" = 'none' ]
 then
