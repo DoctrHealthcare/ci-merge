@@ -169,8 +169,7 @@ ${commitMessage} - <${COMMIT_URL}${mergeCommitSha}|view commit> - <${BUILD_URL}|
 # Always last thing done after merge (fail or success)
 ################################################
 build_done (){
-	step_start "Deleting ready branch on github"
-	(retry 2 git push origin ":ready/${BRANCH}")
+	
 	step_start "Post to slack"
 	if [ "$1" = '0' ]
 	then
@@ -190,6 +189,8 @@ ${slackUser}
 ${COMMIT_URL}${mergeCommitSha}
 ${commitMessage}"
 			deploy
+			step_start "Deleting ready branch on github"
+			(retry 2 git push origin ":ready/${BRANCH}")
 			_exit 0
 		fi
 	else
@@ -386,11 +387,32 @@ case ${BRANCH} in
 	;;
 esac
 
+
+#####################################################################
+# Check if the master has already the current branch to deploy right away
+#####################################################################
+
+
+step_start "Checking if merge is required"
+diff=$(git diff master...)
+	if [ "$diff" = '' ]
+	then
+		echo "Master is already with the current changes"
+		echo "Deploying to production"
+    deploy
+		_exit 0
+	else
+		# node -e "if((require('./package.json').scripts.deploy || '').indexOf('git@heroku.com/${REPO}.git')===-1 && '${REPO}' !== 'vaccination') process.exit(1)" || _exit $? "npm run deploy does not push to ${REPO} on Heroku"
+		# (retry 2 npm run deploy) || _exit $? "npm run deploy failed"
+    echo "Merge is required. Continuing the steps"
+	fi
+
 #####################################################################
 # Checkout master
 # Cleanup any leftovers for previous failed merges (reset --hard, clean -fx)
 # And pull master
 #####################################################################
+
 
 step_start "Checking out master, resetting (hard), pulling from origin and cleaning"
 
