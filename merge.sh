@@ -388,24 +388,6 @@ case ${BRANCH} in
 esac
 
 
-#####################################################################
-# Check if the master has already the current branch to deploy right away
-#####################################################################
-
-
-step_start "Checking if merge is required"
-diff=$(git diff master...)
-	if [ "$diff" = '' ]
-	then
-		echo "Master is already with the current changes"
-		echo "Deploying to production"
-    deploy
-		_exit 0
-	else
-		# node -e "if((require('./package.json').scripts.deploy || '').indexOf('git@heroku.com/${REPO}.git')===-1 && '${REPO}' !== 'vaccination') process.exit(1)" || _exit $? "npm run deploy does not push to ${REPO} on Heroku"
-		# (retry 2 npm run deploy) || _exit $? "npm run deploy failed"
-    echo "Merge is required. Continuing the steps"
-	fi
 
 #####################################################################
 # Checkout master
@@ -422,6 +404,27 @@ git branch --set-upstream-to=origin/master master || build_done $? "Could not se
 git reset --hard origin/master || build_done $? "Could not reset to master"
 (retry 2 git pull) || build_done $? "Could not pull master"
 git clean -fx || build_done $? "Could not git clean on master"
+
+#####################################################################
+# Check if the master has already the current branch to deploy right away
+#####################################################################
+
+
+step_start "Checking if merge is required"
+diff=$(git diff ready/${BRANCH})
+	if [ "$diff" = '' ]
+	then
+		echo "Master is already with the current changes"
+		echo "Deploying to production"
+    deploy
+		step_start "Deleting ready branch on github"
+		(retry 2 git push origin ":ready/${BRANCH}")
+		_exit 0
+	else
+		# node -e "if((require('./package.json').scripts.deploy || '').indexOf('git@heroku.com/${REPO}.git')===-1 && '${REPO}' !== 'vaccination') process.exit(1)" || _exit $? "npm run deploy does not push to ${REPO} on Heroku"
+		# (retry 2 npm run deploy) || _exit $? "npm run deploy failed"
+    echo "Merge is required. Continuing the steps"
+	fi
 
 
 ################################################
