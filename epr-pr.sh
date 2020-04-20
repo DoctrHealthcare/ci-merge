@@ -366,8 +366,6 @@ exec 5>&1
 npm run test 2>&1 1>&5 | tee err.log 1>&2
 exit_code=${PIPESTATUS[0]}
 
-echo "execute e2e tests"
-
 ## Executes e2e tests
 ## In the end the server process gets killed
 ## which causes this main process to die too
@@ -376,12 +374,10 @@ echo "execute e2e tests"
 teamcity_e2e_script=$(node -e "console.log(require('./package.json').scripts['test:e2e'] || '')")
 if [ "$exit_code" == "0" ] && [ "$teamcity_e2e_script" != '' ]
 then
-	echo 'here'
   npm run test:e2e &
   proc=$!
   wait $proc
   exit_code=${PIPESTATUS[0]}
-	echo 'got here'
 fi
 
 
