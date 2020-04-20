@@ -540,10 +540,10 @@ exit_code=${PIPESTATUS[0]}
 ## which causes this main process to die too
 ## To avoid that, we run e2e tests in a different process
 ## and wait for it to finish
-e2e_script=$(node -e "console.log(require('./package.json').scripts['test:e2e'] || '')")
-if [ "$exit_code" == "0" ] && [ "$e2e_script" != '' ]
+teamcity_e2e_script=$(node -e "console.log(require('./package.json').scripts['test:e2e'] || '')")
+if [ "$exit_code" == "0" ] && [ "$teamcity_e2e_script" != '' ]
 then
-  npm run test:e2e &
+  npm run teamcity:e2e &
   proc=$!
   wait $proc
   exit_code=${PIPESTATUS[0]}
