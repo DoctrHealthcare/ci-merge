@@ -374,10 +374,12 @@ exit_code=${PIPESTATUS[0]}
 e2e_script=$(node -e "console.log(require('./package.json').scripts['test:e2e'] || '')")
 if [ "$exit_code" == "0" ] && [ "$e2e_script" != '' ]
 then
-  npm run test:e2e &
-  proc=$!
-  wait $proc
-  exit_code=${PIPESTATUS[0]}
+  # npm run test:e2e &
+  # proc=$!
+  # wait $proc
+  # exit_code=${PIPESTATUS[0]}
+	exit_code=$(npm run test:e2e)
+	echo $exit_code
 fi
 
 after_teamcity_script "$exit_code"
