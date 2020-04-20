@@ -360,12 +360,12 @@ then
 fi
 
 ## file descriptor 5 is stdout
-# exec 5>&1
+exec 5>&1
 ## redirect stderr to stdout for capture by tee, and redirect stdout to file descriptor 5 for output on stdout (with no capture by tee)
 ## after capture of stderr on stdout by tee, redirect back to stderr
-# npm run test 2>&1 1>&5 | tee err.log 1>&2
-# exit_code=${PIPESTATUS[0]}
-npm run test || build_done 1 "Failing tests via npm run test"
+npm run test 2>&1 1>&5 | tee err.log 1>&2
+exit_code=${PIPESTATUS[0]}
+# npm run test || build_done 1 "Failing tests via npm run test"
 ## Executes e2e tests
 ## In the end the server process gets killed
 ## which causes this main process to die too
@@ -375,11 +375,11 @@ teamcity_e2e_script=$(node -e "console.log(require('./package.json').scripts['te
 if [ "$exit_code" == "0" ] && [ "$teamcity_e2e_script" != '' ]
 then
 step_start "Running e2e tests"
-	npm run test:e2e || build_done 1 "Failing E2E tests"
+	npm run test:e2e 2>&1 1>&5 | tee err.log 1>&2
   # npm run test:e2e &
   # proc=$!
   # wait $proc
-  # exit_code=${PIPESTATUS[0]}
+  exit_code=${PIPESTATUS[0]}
 fi
 
 
