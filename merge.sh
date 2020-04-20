@@ -528,7 +528,7 @@ then
 fi
 
 ## file descriptor 5 is stdout
-# exec 5>&1
+exec 5>&1
 ## redirect stderr to stdout for capture by tee, and redirect stdout to file descriptor 5 for output on stdout (with no capture by tee)
 ## after capture of stderr on stdout by tee, redirect back to stderr
 npm run test 2>&1 1>&5 | tee err.log 1>&2
