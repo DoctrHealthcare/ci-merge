@@ -152,6 +152,7 @@ deploy(){
 	commitMessage=$(git log -1 --pretty=%B)
 	lastCommitAuthor=$(git log --pretty=format:'%an' -n 1)
 	deployscript=$(node -e "console.log(require('./package.json').scripts.deploy || '')")
+	REPO=${CIRCLE_PROJECT_REPONAME}
 	if [ "$deployscript" = '' ]
 	then
 		_exit 0 "No npm run deploy script available"
@@ -179,8 +180,7 @@ ${commitMessage} - <${COMMIT_URL}${mergeCommitSha}|view commit> - <${BUILD_URL}|
 # Always last thing done after merge (fail or success)
 ################################################
 build_done (){
-	step_start "Deleting ready branch on github"
-	(retry 2 git push origin ":ready/${BRANCH}")
+	
 	step_start "Post to slack"
 	if [ "$1" = '0' ]
 	then
@@ -200,6 +200,8 @@ ${slackUser}
 ${COMMIT_URL}${mergeCommitSha}
 ${commitMessage}"
 			deploy
+			step_start "Deleting ready branch on github"
+			(retry 2 git push origin ":ready/${BRANCH}")
 			_exit 0
 		fi
 	else
@@ -234,7 +236,7 @@ ${commitMessage} - <${BUILD_URL}|view build log> " red
 ################################################
 stepName=""
 step_end(){
-	echo "##teamcity[blockClosed name='${stepName}']"
+	echo "Finished step: '${stepName}'"
 }
 step_start(){
 	if [ "${stepName}" != '' ]
@@ -242,7 +244,7 @@ step_start(){
 		step_end
 	fi
 	stepName=$(echo "-- $1 --")
-	echo "##teamcity[blockOpened name='${stepName}']"
+	echo "Started step: '${stepName}'"
 }
 
 ################################################
@@ -305,10 +307,13 @@ then
 	exit 0
 fi
 
+BRANCH=${CIRCLE_BRANCH#"ready/"}
+BUILD_URL="${CIRCLE_BUILD_URL}"
 pullRequestLink=""
 project=$(node -e "console.log(require('./package.json').name || '')")
 githubRemote=$(git remote -v | grep origin | grep fetch | grep github)
 githubProject=$(node -e "console.log('$githubRemote'.split(':').pop().split('.').shift())")
+COMMIT_URL="https://github.com/${githubProject}/commit/"
 slackProject="<https://github.com/${githubProject}|${project}>"
 slackUser=$(curl -sS -L 'https://raw.githubusercontent.com/practio/ci-merge/master/getSlackUser.sh' | bash)
 commitMessage="${BRANCH}"
@@ -393,11 +398,14 @@ case ${BRANCH} in
 	;;
 esac
 
+
+
 #####################################################################
 # Checkout master
 # Cleanup any leftovers for previous failed merges (reset --hard, clean -fx)
 # And pull master
 #####################################################################
+
 
 step_start "Checking out master, resetting (hard), pulling from origin and cleaning"
 
@@ -407,6 +415,27 @@ git branch --set-upstream-to=origin/master master || build_done $? "Could not se
 git reset --hard origin/master || build_done $? "Could not reset to master"
 (retry 2 git pull) || build_done $? "Could not pull master"
 git clean -fx || build_done $? "Could not git clean on master"
+
+#####################################################################
+# Check if the master has already the current branch to deploy right away
+#####################################################################
+
+
+step_start "Checking if merge is required"
+diff=$(git diff ready/${BRANCH})
+	if [ "$diff" = '' ]
+	then
+		echo "Master is already with the current changes"
+		echo "Deploying to production"
+    deploy
+		step_start "Deleting ready branch on github"
+		(retry 2 git push origin ":ready/${BRANCH}")
+		_exit 0
+	else
+		# node -e "if((require('./package.json').scripts.deploy || '').indexOf('git@heroku.com/${REPO}.git')===-1 && '${REPO}' !== 'vaccination') process.exit(1)" || _exit $? "npm run deploy does not push to ${REPO} on Heroku"
+		# (retry 2 npm run deploy) || _exit $? "npm run deploy failed"
+    echo "Merge is required. Continuing the steps"
+	fi
 
 
 ################################################
@@ -445,8 +474,8 @@ nodeCurrent=$(node --version | sed -e 's/v//g')
 if [ "${nodeSpecified}" != "${nodeCurrent}" ]
 then
 	step_start "Changing node.js v${nodeCurrent}->v${nodeSpecified}"
-	sudo npm install -g n || build_done 1 "Could not install n module to change node version from ${nodeCurrent} to ${nodeSpecified}"
-	sudo n "${nodeSpecified}" || build_done 1 "n module failed to change node version from ${nodeCurrent} to ${nodeSpecified}"
+	npm install -g n || build_done 1 "Could not install n module to change node version from ${nodeCurrent} to ${nodeSpecified}"
+	n "${nodeSpecified}" || build_done 1 "n module failed to change node version from ${nodeCurrent} to ${nodeSpecified}"
 	echo "Running node.js:"
 	node --version
 fi
@@ -459,7 +488,7 @@ npmCurrent=$(npm --version)
 if [ "${npmSpecified}" != "${npmCurrent}" ]
 then
 	step_start "Changing npm v${npmCurrent}->v${npmSpecified}"
-	sudo npm install -g "npm@${npmSpecified}" || build_done 1 "Could not install npm version ${npmSpecified}. Changing from current npm version ${npmCurrent}"
+	npm install -g "npm@${npmSpecified}" || build_done 1 "Could not install npm version ${npmSpecified}. Changing from current npm version ${npmCurrent}"
 fi
 
 ################################################
@@ -490,19 +519,20 @@ format
 # Run tests, and capture output to stderr
 ################################################
 
-step_start "Running tests with >npm run teamcity "
+step_start "Running tests with >npm run test "
 
-teamcityscript=$(node -e "console.log(require('./package.json').scripts.teamcity || '')")
+teamcityscript=$(node -e "console.log(require('./package.json').scripts.test || '')")
 if [ "$teamcityscript" = '' ]
 then
-	build_done 1 "No 'teamcity' script in package.json"
+	build_done 1 "No 'test' script in package.json"
 fi
 
 ## file descriptor 5 is stdout
 exec 5>&1
 ## redirect stderr to stdout for capture by tee, and redirect stdout to file descriptor 5 for output on stdout (with no capture by tee)
 ## after capture of stderr on stdout by tee, redirect back to stderr
-npm run teamcity 2>&1 1>&5 | tee err.log 1>&2
+npm run test 2>&1 1>&5 | tee err.log 1>&2
+# npm run test
 exit_code=${PIPESTATUS[0]}
 
 ## Executes e2e tests
@@ -510,7 +540,7 @@ exit_code=${PIPESTATUS[0]}
 ## which causes this main process to die too
 ## To avoid that, we run e2e tests in a different process
 ## and wait for it to finish
-teamcity_e2e_script=$(node -e "console.log(require('./package.json').scripts['teamcity:e2e'] || '')")
+teamcity_e2e_script=$(node -e "console.log(require('./package.json').scripts['test:e2e'] || '')")
 if [ "$exit_code" == "0" ] && [ "$teamcity_e2e_script" != '' ]
 then
   npm run teamcity:e2e &

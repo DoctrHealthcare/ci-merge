@@ -224,6 +224,16 @@ after_teamcity_script(){
   then
     build_done "${code}" "Failing test(s)"	"${err}"
   fi
+  lastCommitAuthor=$(git log --pretty=format:'%an' -n 1)
+  echo "Last commit author: ${lastCommitAuthor}"
+  if echo "$lastCommitAuthor" | grep -q "dependabot"; then
+    step_start "Automatic deployment of PR from dependabot"
+	currentSha=$(git log -1 --format="%H")
+	commitMessage=$(git log --oneline --format=%B -n 1 HEAD | head -n 1)
+	readyBranchName=${commitMessage// /_}
+	epoc=$(date +%s)
+	(retry 2 git push origin "${currentSha}:refs/heads/ready/dependabot_update_${readyBranchName}/${epoc}s")
+  fi
   build_done 0
 }
 
@@ -355,7 +365,7 @@ exec 5>&1
 ## after capture of stderr on stdout by tee, redirect back to stderr
 npm run test 2>&1 1>&5 | tee err.log 1>&2
 exit_code=${PIPESTATUS[0]}
-
+# npm run test || build_done 1 "Failing tests via npm run test"
 ## Executes e2e tests
 ## In the end the server process gets killed
 ## which causes this main process to die too
@@ -364,10 +374,13 @@ exit_code=${PIPESTATUS[0]}
 teamcity_e2e_script=$(node -e "console.log(require('./package.json').scripts['test:e2e'] || '')")
 if [ "$exit_code" == "0" ] && [ "$teamcity_e2e_script" != '' ]
 then
-  npm run teamcity:e2e &
-  proc=$!
-  wait $proc
+step_start "Running e2e tests"
+	npm run test:e2e 2>&1 1>&5 | tee err.log 1>&2
+  # npm run test:e2e &
+  # proc=$!
+  # wait $proc
   exit_code=${PIPESTATUS[0]}
 fi
+
 
 after_teamcity_script "$exit_code"
